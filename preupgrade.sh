@@ -10,6 +10,7 @@ PSHNAME=$2
 PVERSION=$4
 
 PCONFIG=$LBPCONFIG/$PDIR
+PDATA=$LBPDATA/$PDIR
 
 echo "<INFO> preupgrade.sh: Update von Plugin $PSHNAME auf Version $PVERSION wird vorbereitet"
 
@@ -19,6 +20,19 @@ echo "<INFO> preupgrade.sh: Update von Plugin $PSHNAME auf Version $PVERSION wir
 if [ -f "$PCONFIG/pluginconfig.json" ]; then
 	cp -f "$PCONFIG/pluginconfig.json" "/tmp/${PSHNAME}_pluginconfig.json.bak"
 	echo "<INFO> preupgrade.sh: pluginconfig.json gesichert"
+fi
+
+# Dasselbe gilt fuer das Datenverzeichnis - state.json (aktueller Status
+# je Fahrzeug) und die SoC-Verlaufsdateien fuer das Uebersichts-Diagramm
+# sollen ein Update ebenfalls ueberleben. Die Python-venv wird bewusst
+# NICHT gesichert, die baut postinstall.sh bei Bedarf ohnehin automatisch
+# neu auf.
+if [ -f "$PDATA/state.json" ] || ls "$PDATA"/history_*.jsonl >/dev/null 2>&1; then
+	rm -rf "/tmp/${PSHNAME}_data.bak"
+	mkdir -p "/tmp/${PSHNAME}_data.bak"
+	cp -f "$PDATA/state.json" "/tmp/${PSHNAME}_data.bak/" 2>/dev/null
+	cp -f "$PDATA"/history_*.jsonl "/tmp/${PSHNAME}_data.bak/" 2>/dev/null
+	echo "<INFO> preupgrade.sh: state.json und Verlaufsdaten gesichert"
 fi
 
 exit 0
