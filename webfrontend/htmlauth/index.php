@@ -126,16 +126,40 @@ LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plug
 
 <div class="kia2lox-page">
 
-	<?php if (count($vehicles) > 1): ?>
 	<div class="kia2lox-vehicle-bar">
 		<?php foreach ($vehicles as $v): ?>
-			<a class="kia2lox-vehicle-pill<?php echo $v["id"] === $active_id ? " active" : ""; ?>"
-			   href="index.php?vehicle=<?php echo urlencode($v["id"]); ?>">
-				<?php echo htmlspecialchars($v["name"]); ?>
-			</a>
+			<div class="kia2lox-vehicle-pill<?php echo $v["id"] === $active_id ? " active" : ""; ?>">
+				<a class="kia2lox-vehicle-pill-label" href="index.php?vehicle=<?php echo urlencode($v["id"]); ?>">
+					<?php echo htmlspecialchars($v["name"]); ?>
+				</a>
+				<?php if (count($vehicles) > 1): ?>
+					<form method="post" action="index.php" class="kia2lox-vehicle-pill-remove-form"
+					      onsubmit="return confirm('Fahrzeug &quot;<?php echo htmlspecialchars(addslashes($v["name"])); ?>&quot; wirklich entfernen?');">
+						<input type="hidden" name="action" value="remove_vehicle">
+						<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($v["id"]); ?>">
+						<button type="submit" class="kia2lox-vehicle-pill-remove" aria-label="Fahrzeug &quot;<?php echo htmlspecialchars($v["name"]); ?>&quot; entfernen">&times;</button>
+					</form>
+				<?php endif; ?>
+			</div>
 		<?php endforeach; ?>
+
+		<?php if (count($vehicles) < KIA2LOX_MAX_VEHICLES): ?>
+			<button type="button" class="kia2lox-vehicle-pill-add" onclick="kia2loxAddVehicle()">+ Fahrzeug</button>
+		<?php endif; ?>
 	</div>
-	<?php endif; ?>
+
+	<form method="post" action="index.php" id="kia2lox-add-vehicle-form" style="display:none;">
+		<input type="hidden" name="action" value="add_vehicle">
+		<input type="hidden" name="new_vehicle_name" id="kia2lox-new-vehicle-name">
+	</form>
+	<script>
+		function kia2loxAddVehicle() {
+			var name = prompt("Name des neuen Fahrzeugs:");
+			if (!name) { return; }
+			document.getElementById("kia2lox-new-vehicle-name").value = name;
+			document.getElementById("kia2lox-add-vehicle-form").submit();
+		}
+	</script>
 
 	<?php if ($message): ?>
 		<p class="kia2lox-message kia2lox-message-<?php echo htmlspecialchars($message_type); ?>">
@@ -177,28 +201,6 @@ LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plug
 			<button type="submit" class="kia2lox-btn">Zugangsdaten speichern</button>
 		</form>
 	</div>
-
-	<?php if (count($vehicles) < KIA2LOX_MAX_VEHICLES): ?>
-	<div class="kia2lox-card">
-		<h3>Neues Fahrzeug</h3>
-		<form method="post" action="index.php" class="kia2lox-inline-form">
-			<input type="hidden" name="action" value="add_vehicle">
-			<div class="kia2lox-field">
-				<label for="new_vehicle_name">Name</label>
-				<input type="text" id="new_vehicle_name" name="new_vehicle_name" placeholder="z.B. Zweitwagen">
-			</div>
-			<button type="submit" class="kia2lox-btn-secondary">+ Fahrzeug hinzuf&uuml;gen</button>
-		</form>
-	</div>
-	<?php endif; ?>
-
-	<?php if (count($vehicles) > 1): ?>
-	<form method="post" action="index.php" onsubmit="return confirm('Fahrzeug &quot;<?php echo htmlspecialchars(addslashes($active['name'])); ?>&quot; wirklich entfernen?');">
-		<input type="hidden" name="action" value="remove_vehicle">
-		<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($active_id); ?>">
-		<button type="submit" class="kia2lox-btn-danger">Dieses Fahrzeug entfernen</button>
-	</form>
-	<?php endif; ?>
 
 </div>
 <?php

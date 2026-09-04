@@ -87,11 +87,13 @@ body { background: var(--bg); }
 	font-weight: 700;
 	margin: 0 0 6px;
 	letter-spacing: -0.01em;
+	text-shadow: none;
 }
 .kia2lox-hero p {
 	margin: 0;
 	color: #C6CBCE;
 	font-size: 14px;
+	text-shadow: none;
 }
 .kia2lox-version-badge {
 	font-family: Consolas, monospace;
@@ -142,29 +144,56 @@ body { background: var(--bg); }
 
 .kia2lox-vehicle-bar {
 	display: flex;
-	align-items: center;
+	align-items: stretch;
 	gap: 8px;
 	flex-wrap: wrap;
 	margin-bottom: 18px;
 }
 .kia2lox-vehicle-pill {
-	display: inline-block;
-	padding: 8px 14px;
-	border-radius: 20px;
+	display: inline-flex;
+	align-items: stretch;
 	background: var(--surface-alt);
 	border: 1px solid var(--border);
-	color: var(--text-muted);
-	font-size: 13px;
-	font-weight: 600;
-	text-decoration: none;
-	cursor: pointer;
+	border-radius: 20px;
+	overflow: hidden;
 }
 .kia2lox-vehicle-pill.active {
 	background: var(--success-bg);
 	border-color: var(--success-bg-strong);
-	color: var(--text);
 }
-.kia2lox-vehicle-pill:hover { color: var(--text); }
+.kia2lox-vehicle-pill-label {
+	padding: 8px 14px;
+	color: var(--text-muted);
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+}
+.kia2lox-vehicle-pill.active .kia2lox-vehicle-pill-label { color: var(--text); }
+.kia2lox-vehicle-pill-label:hover { color: var(--text); }
+.kia2lox-vehicle-pill-remove-form { display: flex; margin: 0; }
+.kia2lox-vehicle-pill-remove {
+	appearance: none;
+	border: none;
+	border-left: 1px solid var(--border);
+	background: transparent;
+	color: var(--text-muted);
+	width: 26px;
+	font-size: 13px;
+	cursor: pointer;
+}
+.kia2lox-vehicle-pill-remove:hover { color: var(--danger); }
+.kia2lox-vehicle-pill-add {
+	appearance: none;
+	border: 1px dashed var(--border);
+	background: transparent;
+	color: var(--text-muted);
+	border-radius: 20px;
+	padding: 8px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+.kia2lox-vehicle-pill-add:hover { color: var(--text); border-color: var(--accent); }
 
 .kia2lox-message {
 	border-radius: 10px;
