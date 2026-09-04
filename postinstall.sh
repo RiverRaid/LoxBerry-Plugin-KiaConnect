@@ -73,7 +73,18 @@ else
 	echo "<INFO> postinstall.sh: Portable Python-Umgebung existiert bereits, wird wiederverwendet"
 fi
 
+# Marker-Datei mit der Python-Version, mit der die venv gebaut wurde.
+# Weicht sie von der aktuell gewuenschten Version ab (z.B. weil ein
+# spaeteres Plugin-Update auf eine neuere Python-Version umstellt), wird
+# die venv verworfen und neu gebaut, statt eine inkompatible venv
+# weiterzuverwenden.
 VENVDIR="$PDATA/venv"
+VENV_MARKER="$VENVDIR/.kia2lox_python_version"
+if [ -d "$VENVDIR" ] && [ "$(cat "$VENV_MARKER" 2>/dev/null)" != "$PYSTANDALONE_VERSION" ]; then
+	echo "<INFO> postinstall.sh: Vorhandene Python-venv passt nicht zur aktuellen Python-Version, wird neu erstellt"
+	rm -rf "$VENVDIR"
+fi
+
 if [ ! -d "$VENVDIR" ]; then
 	echo "<INFO> postinstall.sh: Erzeuge Python-venv fuer das Plugin"
 	"$PYDIR/bin/python3.12" -m venv "$VENVDIR"
@@ -81,6 +92,7 @@ if [ ! -d "$VENVDIR" ]; then
 		echo "<ERROR> postinstall.sh: Anlegen der Python-venv fehlgeschlagen"
 		exit 2
 	fi
+	echo "$PYSTANDALONE_VERSION" > "$VENV_MARKER"
 else
 	echo "<INFO> postinstall.sh: Python-venv existiert bereits, wird wiederverwendet"
 fi
