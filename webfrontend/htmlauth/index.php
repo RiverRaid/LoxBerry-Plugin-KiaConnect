@@ -69,6 +69,23 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 			kia2lox_json_response(["ok" => false, "message" => kia2lox_t("SETTINGS.CRED_REQUIRED")]);
 		}
 
+		// Aktuellen Stand ermitteln - nur wenn sich Benutzername, Passwort
+		// oder PIN wirklich geaendert haben (oder das Fahrzeug noch nie
+		// erfolgreich verbunden war), ist ein erneuter Login-Test noetig.
+		// Eine reine Namensaenderung braucht keinen neuen Check.
+		$current = null;
+		foreach ($vehicles as $v) {
+			if ($v["id"] === $id) {
+				$current = $v;
+				break;
+			}
+		}
+		$was_connected = !empty($current["kia_connected"]);
+		$credentials_changed = $current === null
+			|| ($current["kia_username"] ?? "") !== $username
+			|| ($current["kia_password"] ?? "") !== $password
+			|| ($current["kia_pin"] ?? "") !== $pin;
+
 		// Fahrzeugname unabhaengig vom Login-Ergebnis speichern, damit
 		// er auch bei falschen Zugangsdaten nicht verloren geht.
 		foreach ($vehicles as &$v) {
@@ -78,6 +95,15 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		}
 		unset($v);
 		kia2lox_save_vehicles($vehicles);
+
+		if ($was_connected && !$credentials_changed) {
+			kia2lox_json_response([
+				"ok" => true,
+				"message" => kia2lox_t("SETTINGS.SAVE_OK_DEFAULT"),
+				"name" => $name,
+				"connected" => true,
+			]);
+		}
 
 		$test = kia2lox_test_login($username, $password, $pin);
 		if (!$test["ok"]) {
@@ -93,13 +119,6 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		// allererste erfolgreiche Verbindung - dann gleich einen echten
 		// Force-Refresh anstossen, damit auf der Uebersicht sofort Daten
 		// zu sehen sind, statt bis zum naechsten Intervall zu warten.
-		$was_connected = false;
-		foreach ($vehicles as $v) {
-			if ($v["id"] === $id) {
-				$was_connected = !empty($v["kia_connected"]);
-			}
-		}
-
 		foreach ($vehicles as &$v) {
 			if ($v["id"] === $id) {
 				$v["kia_username"] = $username;
@@ -207,13 +226,10 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		$id = $_POST["vehicle_id"] ?? "";
 		$result = kia2lox_manual_refresh($id);
 		if ($result["ok"]) {
-			$message = kia2lox_t("SETTINGS.REFRESH_DONE");
-			$message_type = "ok";
+			kia2lox_json_response(["ok" => true, "message" => kia2lox_t("SETTINGS.REFRESH_DONE")]);
 		} else {
-			$message = kia2lox_t("SETTINGS.REFRESH_FAILED", ["error" => $result["error"] ?? kia2lox_t("COMMON.UNKNOWN_ERROR")]);
-			$message_type = "error";
+			kia2lox_json_response(["ok" => false, "message" => kia2lox_t("SETTINGS.REFRESH_FAILED", ["error" => $result["error"] ?? kia2lox_t("COMMON.UNKNOWN_ERROR")])]);
 		}
-		$active_id = $id;
 	}
 }
 
@@ -272,7 +288,7 @@ $poll_log = array_values(array_filter(
 	function ($entry) use ($today) { return ($entry["date"] ?? "") === $today; }
 ));
 
-LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
+LBWeb::lbheader("Kia2Lox", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
 $kia2lox_active_tab = "settings";
 require "inc_header.php";
 ?>
@@ -373,10 +389,11 @@ require "inc_header.php";
 				<p class="kia2lox-desc"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.INTERVAL_DESC")); ?></p>
 			</div>
 			<?php if ($connected): ?>
-				<form method="post" action="index.php">
+				<form method="post" action="index.php" id="kia2lox-refresh-form" class="kia2lox-refresh-form">
 					<input type="hidden" name="kia2lox_action" value="manual_refresh">
 					<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($active_id); ?>">
 					<button type="submit" class="kia2lox-vehicle-pill-add"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.FORCE_REFRESH_BUTTON")); ?></button>
+					<span class="kia2lox-save-feedback" id="kia2lox-save-feedback-refresh"></span>
 				</form>
 			<?php endif; ?>
 		</div>
@@ -571,6 +588,8 @@ require "inc_header.php";
 		"save_ok_default" => kia2lox_t("SETTINGS.SAVE_OK_DEFAULT"),
 		"save_error_connection" => kia2lox_t("SETTINGS.SAVE_ERROR_CONNECTION"),
 		"copied" => kia2lox_t("SETTINGS.COPIED_BUTTON"),
+		"saving" => kia2lox_t("SETTINGS.SAVING"),
+		"loading_data" => kia2lox_t("SETTINGS.LOADING_DATA"),
 	]); ?>;
 
 	// Speichern-Buttons: grau/inaktiv, bis sich etwas in der jeweiligen
@@ -608,13 +627,19 @@ require "inc_header.php";
 	// Speichert ein Formular per AJAX (kein Seiten-Reload, keine Banner-Box
 	// oben). Zeigt stattdessen kurz einen Haken/Fehlertext neben dem
 	// jeweiligen Button an - wie im abgestimmten Mockup.
-	function kia2loxAjaxSave(form, feedbackId, onSuccess) {
+	function kia2loxAjaxSave(form, feedbackId, onSuccess, loadingText) {
 		if (!form) { return; }
 		var feedback = document.getElementById(feedbackId);
 		var btn = form.querySelector('button[type="submit"]');
 		form.addEventListener("submit", function (e) {
 			e.preventDefault();
 			if (btn) { btn.disabled = true; }
+			if (feedback) {
+				clearTimeout(feedback._kia2loxHideTimer);
+				feedback.classList.remove("kia2lox-save-ok", "kia2lox-save-error");
+				feedback.innerHTML = '<span class="kia2lox-spinner"></span>' + (loadingText || KIA2LOX_L.saving);
+				feedback.classList.add("show");
+			}
 			var formData = new FormData(form);
 			fetch(form.action, { method: "POST", body: formData })
 				.then(function (resp) { return resp.json(); })
@@ -705,6 +730,14 @@ require "inc_header.php";
 	kia2loxAjaxSave(document.getElementById("kia2lox-ms-form"), "kia2lox-save-feedback-ms", function () {
 		if (kia2loxSaveGroups.ms) { kia2loxSaveGroups.ms.resetBaseline(); }
 	});
+
+	// Nach einem erfolgreichen Force-Refresh kurz die Erfolgsmeldung
+	// zeigen, dann neu laden, damit "Heute geplant" & Co. den frischen
+	// Stand zeigen. Bei einem Fehler bleibt die Seite stehen, damit die
+	// Fehlermeldung lesbar bleibt.
+	kia2loxAjaxSave(document.getElementById("kia2lox-refresh-form"), "kia2lox-save-feedback-refresh", function () {
+		setTimeout(function () { window.location.reload(); }, 900);
+	}, KIA2LOX_L.loading_data);
 
 	// Einzelnes Feld rot hinterlegen, sobald es beim Verlassen (blur)
 	// ungueltig/leer ist. Waehrend des Tippens wird die Markierung schon
