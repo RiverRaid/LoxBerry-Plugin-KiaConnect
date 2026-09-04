@@ -12,7 +12,7 @@ $version = LBSystem::pluginversion();
 
 $vehicles = kia2lox_load_vehicles();
 if (empty($vehicles)) {
-	$vehicles = [kia2lox_default_vehicle("Fahrzeug 1", "v1")];
+	$vehicles = [kia2lox_default_vehicle(kia2lox_t("VEHICLES.DEFAULT_NAME", ["n" => 1]), "v1")];
 	kia2lox_save_vehicles($vehicles);
 }
 
@@ -58,9 +58,9 @@ require "inc_header.php";
 
 	<?php if (!$connected): ?>
 		<div class="kia2lox-connect-notice">
-			<p class="kia2lox-connect-notice-title">Noch nicht verbunden</p>
-			<p class="kia2lox-connect-notice-text">Um Ladezustand, Reichweite und Steckerstatus zu sehen, richte zuerst dieses Fahrzeug in den Einstellungen ein.</p>
-			<a class="kia2lox-vehicle-pill-add" href="index.php?vehicle=<?php echo urlencode($active_id); ?>">Zu den Einstellungen &rarr;</a>
+			<p class="kia2lox-connect-notice-title"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CONNECT_NOTICE_TITLE")); ?></p>
+			<p class="kia2lox-connect-notice-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CONNECT_NOTICE_TEXT")); ?></p>
+			<a class="kia2lox-vehicle-pill-add" href="index.php?vehicle=<?php echo urlencode($active_id); ?>"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CONNECT_NOTICE_BUTTON")); ?></a>
 		</div>
 	<?php else: ?>
 
@@ -76,75 +76,75 @@ require "inc_header.php";
 
 		if (!$is_plugged) {
 			$plug_state_class = "";
-			$plug_value = "Nicht eingesteckt";
+			$plug_value = kia2lox_t("OVERVIEW.NOT_PLUGGED");
 			$plug_sub = "&ndash;";
 		} elseif ($charging) {
 			$plug_state_class = " kia2lox-plug-in kia2lox-plug-charging";
-			$plug_value = "Eingesteckt";
-			$plug_sub = "L&auml;dt gerade";
+			$plug_value = kia2lox_t("OVERVIEW.PLUGGED");
+			$plug_sub = kia2lox_t("OVERVIEW.CHARGING_NOW");
 		} else {
 			$plug_state_class = " kia2lox-plug-in";
-			$plug_value = "Eingesteckt";
-			$plug_sub = "L&auml;dt gerade nicht";
+			$plug_value = kia2lox_t("OVERVIEW.PLUGGED");
+			$plug_sub = kia2lox_t("OVERVIEW.NOT_CHARGING");
 		}
 		?>
 
 		<div class="kia2lox-stat-grid">
 			<div class="kia2lox-stat-card" id="kia2lox-vehicle-card" data-soc="<?php echo $soc !== null ? (int)$soc : ""; ?>">
-				<p class="kia2lox-stat-label">Fahrzeug</p>
+				<p class="kia2lox-stat-label"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LABEL_VEHICLE")); ?></p>
 				<div class="kia2lox-stat-value"><?php echo htmlspecialchars($active["name"]); ?></div>
 				<p class="kia2lox-stat-sub">
 					<?php echo $soc !== null ? (int)$soc . "&nbsp;%" : "&ndash;"; ?>
 					&middot;
-					<?php echo $range_km !== null ? (int)$range_km . "&nbsp;km Reichweite" : "keine Reichweite bekannt"; ?>
+					<?php echo htmlspecialchars($range_km !== null ? kia2lox_t("OVERVIEW.RANGE_KM", ["km" => (int)$range_km]) : kia2lox_t("OVERVIEW.RANGE_UNKNOWN")); ?>
 				</p>
 			</div>
 
 			<div class="kia2lox-stat-card<?php echo $plug_state_class; ?>" id="kia2lox-plug-card">
-				<p class="kia2lox-stat-label">Steckerstatus</p>
-				<div class="kia2lox-stat-value"><?php echo $plug_value; ?></div>
-				<p class="kia2lox-stat-sub"><?php echo $plug_sub; ?></p>
+				<p class="kia2lox-stat-label"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LABEL_PLUG_STATUS")); ?></p>
+				<div class="kia2lox-stat-value"><?php echo htmlspecialchars($plug_value); ?></div>
+				<p class="kia2lox-stat-sub"><?php echo $plug_sub === "&ndash;" ? $plug_sub : htmlspecialchars($plug_sub); ?></p>
 			</div>
 
 			<div class="kia2lox-stat-card<?php echo $last_poll_ok === false ? " kia2lox-status-bad" : ($last_poll_ok === true ? " kia2lox-status-ok" : ""); ?>" id="kia2lox-lastpoll-card">
-				<p class="kia2lox-stat-label">Letzte Abfrage</p>
+				<p class="kia2lox-stat-label"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LABEL_LAST_POLL")); ?></p>
 				<div class="kia2lox-stat-value mono"><?php echo $last_poll_at ? htmlspecialchars(date("H:i", strtotime($last_poll_at))) : "&ndash;"; ?></div>
 				<p class="kia2lox-stat-sub">
 					<?php if ($last_poll_ok === true): ?>
-						<span class="kia2lox-badge-dot"></span>Erfolgreich
+						<span class="kia2lox-badge-dot"></span><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.STATUS_OK")); ?>
 					<?php elseif ($last_poll_ok === false): ?>
-						<span class="kia2lox-badge-dot kia2lox-badge-dot-bad"></span>Fehlgeschlagen
+						<span class="kia2lox-badge-dot kia2lox-badge-dot-bad"></span><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.STATUS_FAILED")); ?>
 					<?php else: ?>
-						Noch keine Abfrage
+						<?php echo htmlspecialchars(kia2lox_t("OVERVIEW.STATUS_NONE")); ?>
 					<?php endif; ?>
 				</p>
 			</div>
 
 			<div class="kia2lox-stat-card" id="kia2lox-nextpoll-card">
-				<p class="kia2lox-stat-label">N&auml;chste Abfrage</p>
+				<p class="kia2lox-stat-label"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LABEL_NEXT_POLL")); ?></p>
 				<div class="kia2lox-stat-value mono"><?php echo $next_time ? htmlspecialchars($next_time) : "&ndash;"; ?></div>
 				<p class="kia2lox-stat-sub">
 					<?php
 					$mode = $active["passive_mode"] ?? "interval";
 					if ($mode === "never") {
-						echo "passive Abfrage deaktiviert";
+						echo htmlspecialchars(kia2lox_t("OVERVIEW.MODE_NEVER"));
 					} elseif ($mode === "custom") {
-						echo "individuelle Zeiten";
+						echo htmlspecialchars(kia2lox_t("OVERVIEW.MODE_CUSTOM"));
 					} else {
-						echo "passiv, alle " . (int)($active["passive_interval_minutes"] ?? 60) . " Min.";
+						echo htmlspecialchars(kia2lox_t("OVERVIEW.MODE_INTERVAL", ["n" => (int)($active["passive_interval_minutes"] ?? 60)]));
 					}
 					?>
 				</p>
 			</div>
 
 			<div class="kia2lox-stat-card<?php echo $ms_reachable === true ? " kia2lox-status-ok" : ($ms_reachable === false ? " kia2lox-status-bad" : ""); ?>" id="kia2lox-ms-status-card">
-				<p class="kia2lox-stat-label">Miniserver</p>
+				<p class="kia2lox-stat-label"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LABEL_MINISERVER")); ?></p>
 				<div class="kia2lox-stat-value"><?php echo $ms_name !== "" ? htmlspecialchars($ms_name) : "&ndash;"; ?></div>
 				<p class="kia2lox-stat-sub">
 					<?php if ($ms_reachable === true): ?>
-						<span class="kia2lox-badge-dot"></span>Erreichbar
+						<span class="kia2lox-badge-dot"></span><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.MS_REACHABLE")); ?>
 					<?php elseif ($ms_reachable === false): ?>
-						<span class="kia2lox-badge-dot kia2lox-badge-dot-bad"></span>Nicht erreichbar
+						<span class="kia2lox-badge-dot kia2lox-badge-dot-bad"></span><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.MS_UNREACHABLE")); ?>
 					<?php else: ?>
 						&ndash;
 					<?php endif; ?>
@@ -155,11 +155,11 @@ require "inc_header.php";
 		<?php if ($recharge_needed): ?>
 			<div class="kia2lox-info-banner" id="kia2lox-banner-balance">
 				<div class="kia2lox-info-banner-body">
-					<p class="kia2lox-info-banner-title">Zellausgleich empfohlen</p>
-					<p class="kia2lox-info-banner-text">Der Ladezustand hat in den letzten 30 Tagen nicht 100&nbsp;% erreicht. Ein gelegentliches Vollladen hilft dem Batteriemanagement, die Zellen auszubalancieren &ndash; lass das Fahrzeug danach aber nicht lange voll geladen stehen.</p>
+					<p class="kia2lox-info-banner-title"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BALANCE_TITLE")); ?></p>
+					<p class="kia2lox-info-banner-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BALANCE_TEXT")); ?></p>
 					<div class="kia2lox-info-banner-actions">
-						<button class="kia2lox-btn-banner-ok" data-banner="balance" type="button">Verstanden</button>
-						<button class="kia2lox-btn-banner-mute" data-banner="balance" type="button">Nicht mehr anzeigen</button>
+						<button class="kia2lox-btn-banner-ok" data-banner="balance" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_OK")); ?></button>
+						<button class="kia2lox-btn-banner-mute" data-banner="balance" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_MUTE")); ?></button>
 					</div>
 				</div>
 			</div>
@@ -168,11 +168,11 @@ require "inc_header.php";
 		<?php if ($full_parked): ?>
 			<div class="kia2lox-info-banner" id="kia2lox-banner-full">
 				<div class="kia2lox-info-banner-body">
-					<p class="kia2lox-info-banner-title">Fahrzeug steht seit Stunden voll geladen</p>
-					<p class="kia2lox-info-banner-text">Ein dauerhaft voller Akku belastet die Zellen unn&ouml;tig. Wenn m&ouml;glich, das Fahrzeug bald nach dem Laden nutzen oder den Ladestand k&uuml;nftig etwas niedriger begrenzen.</p>
+					<p class="kia2lox-info-banner-title"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.FULL_TITLE")); ?></p>
+					<p class="kia2lox-info-banner-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.FULL_TEXT")); ?></p>
 					<div class="kia2lox-info-banner-actions">
-						<button class="kia2lox-btn-banner-ok" data-banner="full" type="button">Verstanden</button>
-						<button class="kia2lox-btn-banner-mute" data-banner="full" type="button">Nicht mehr anzeigen</button>
+						<button class="kia2lox-btn-banner-ok" data-banner="full" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_OK")); ?></button>
+						<button class="kia2lox-btn-banner-mute" data-banner="full" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_MUTE")); ?></button>
 					</div>
 				</div>
 			</div>
@@ -181,31 +181,31 @@ require "inc_header.php";
 		<?php if ($low_battery): ?>
 			<div class="kia2lox-info-banner" id="kia2lox-banner-lowbattery">
 				<div class="kia2lox-info-banner-body">
-					<p class="kia2lox-info-banner-title">Fahrzeug steht seit Stunden mit niedrigem Akku</p>
-					<p class="kia2lox-info-banner-text">Der Ladezustand ist seit mehreren Stunden unter 10&nbsp;% und das Fahrzeug l&auml;dt nicht. Zum Schutz der Batterie und um nicht liegenzubleiben, das Fahrzeug bald wieder aufladen.</p>
+					<p class="kia2lox-info-banner-title"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LOWBATTERY_TITLE")); ?></p>
+					<p class="kia2lox-info-banner-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LOWBATTERY_TEXT")); ?></p>
 					<div class="kia2lox-info-banner-actions">
-						<button class="kia2lox-btn-banner-ok" data-banner="lowbattery" type="button">Verstanden</button>
-						<button class="kia2lox-btn-banner-mute" data-banner="lowbattery" type="button">Nicht mehr anzeigen</button>
+						<button class="kia2lox-btn-banner-ok" data-banner="lowbattery" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_OK")); ?></button>
+						<button class="kia2lox-btn-banner-mute" data-banner="lowbattery" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_MUTE")); ?></button>
 					</div>
 				</div>
 			</div>
 		<?php endif; ?>
 
 		<section class="kia2lox-card" id="kia2lox-chart-card">
-			<h2>Ladezustand</h2>
+			<h2><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CHART_TITLE")); ?></h2>
 			<?php if (empty($history)): ?>
-				<p class="kia2lox-hint">Noch keine Verlaufsdaten vorhanden. Nach der ersten Abfrage f&uuml;llt sich das Diagramm nach und nach.</p>
+				<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CHART_EMPTY_HINT")); ?></p>
 			<?php else: ?>
 				<div class="kia2lox-chart-controls">
-					<div class="kia2lox-chart-range-group" role="group" aria-label="Zeitraum">
-						<button class="kia2lox-chart-range-btn" data-range="24h" type="button">24 Std</button>
-						<button class="kia2lox-chart-range-btn active" data-range="7d" type="button">7 Tage</button>
-						<button class="kia2lox-chart-range-btn" data-range="30d" type="button">30 Tage</button>
+					<div class="kia2lox-chart-range-group" role="group" aria-label="<?php echo htmlspecialchars(kia2lox_t("OVERVIEW.RANGE_ARIA")); ?>">
+						<button class="kia2lox-chart-range-btn" data-range="24h" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.RANGE_24H")); ?></button>
+						<button class="kia2lox-chart-range-btn active" data-range="7d" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.RANGE_7D")); ?></button>
+						<button class="kia2lox-chart-range-btn" data-range="30d" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.RANGE_30D")); ?></button>
 					</div>
 					<span class="kia2lox-chart-range-label" id="kia2lox-chart-range-label"></span>
 				</div>
 				<div class="kia2lox-chart-wrap">
-					<svg viewBox="0 0 640 220" id="kia2lox-soc-chart-svg" role="img" aria-label="Ladezustand im gew&auml;hlten Zeitraum, ein Punkt je Abfrage">
+					<svg viewBox="0 0 640 220" id="kia2lox-soc-chart-svg" role="img" aria-label="<?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CHART_ARIA_LABEL")); ?>">
 						<line x1="36" y1="16" x2="628" y2="16" class="kia2lox-chart-grid"/>
 						<line x1="36" y1="60" x2="628" y2="60" class="kia2lox-chart-grid"/>
 						<line x1="36" y1="104" x2="628" y2="104" class="kia2lox-chart-grid"/>
@@ -231,6 +231,11 @@ require "inc_header.php";
 </div>
 <script>
 	var KIA2LOX_HISTORY = <?php echo json_encode($history); ?>;
+	var KIA2LOX_L = <?php echo json_encode([
+		"records_one" => kia2lox_t("OVERVIEW.RECORDS_ONE"),
+		"records_other" => kia2lox_t("OVERVIEW.RECORDS_OTHER"),
+		"chart_no_data" => kia2lox_t("OVERVIEW.CHART_NO_DATA"),
+	]); ?>;
 </script>
 <script>
 	// Fahrzeug-Box: Hintergrund faerbt sich stufenlos von Rot (<=20%) ueber
@@ -271,12 +276,12 @@ require "inc_header.php";
 		if (!gearBtn || !popover) { return; }
 
 		var BOX_DEFS = [
-			{ key: "vehicle", label: "Fahrzeug", el: "kia2lox-vehicle-card" },
-			{ key: "plug", label: "Steckerstatus", el: "kia2lox-plug-card" },
-			{ key: "lastpoll", label: "Letzte Abfrage", el: "kia2lox-lastpoll-card" },
-			{ key: "nextpoll", label: "Nächste Abfrage", el: "kia2lox-nextpoll-card" },
-			{ key: "miniserver", label: "Miniserver", el: "kia2lox-ms-status-card" },
-			{ key: "chart", label: "Ladezustand-Diagramm", el: "kia2lox-chart-card" }
+			{ key: "vehicle", label: <?php echo json_encode(kia2lox_t("OVERVIEW.LABEL_VEHICLE")); ?>, el: "kia2lox-vehicle-card" },
+			{ key: "plug", label: <?php echo json_encode(kia2lox_t("OVERVIEW.LABEL_PLUG_STATUS")); ?>, el: "kia2lox-plug-card" },
+			{ key: "lastpoll", label: <?php echo json_encode(kia2lox_t("OVERVIEW.LABEL_LAST_POLL")); ?>, el: "kia2lox-lastpoll-card" },
+			{ key: "nextpoll", label: <?php echo json_encode(kia2lox_t("OVERVIEW.LABEL_NEXT_POLL")); ?>, el: "kia2lox-nextpoll-card" },
+			{ key: "miniserver", label: <?php echo json_encode(kia2lox_t("OVERVIEW.LABEL_MINISERVER")); ?>, el: "kia2lox-ms-status-card" },
+			{ key: "chart", label: <?php echo json_encode(kia2lox_t("OVERVIEW.CHART_BOX_LABEL")); ?>, el: "kia2lox-chart-card" }
 		];
 		var STORAGE_KEY = "kia2lox_visible_boxes_" + <?php echo json_encode($active_id); ?>;
 
@@ -390,12 +395,13 @@ require "inc_header.php";
 		var W = 640, H = 220;
 		var innerW = W - padL - padR, innerH = H - padT - padB;
 
-		var WEEKDAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+		var CHART_LOCALE = <?php echo json_encode(kia2lox_t("OVERVIEW.CHART_LOCALE")); ?>;
+		var WEEKDAYS = <?php echo json_encode(explode(",", kia2lox_t("OVERVIEW.WEEKDAYS"))); ?>;
 		function fmtDate(d) {
-			return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+			return d.toLocaleDateString(CHART_LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' });
 		}
 		function fmtTime(d) {
-			return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+			return d.toLocaleTimeString(CHART_LOCALE, { hour: '2-digit', minute: '2-digit' });
 		}
 
 		function svgEl(tag, attrs) {
@@ -418,13 +424,13 @@ require "inc_header.php";
 			} else {
 				var fromDate = points[0].date, toDate = points[points.length - 1].date;
 				var rangeText = fmtDate(fromDate) === fmtDate(toDate) ? fmtDate(fromDate) : (fmtDate(fromDate) + " – " + fmtDate(toDate));
-				var countText = points.length === 1 ? "1 Datensatz" : (points.length + " Datensätze");
+				var countText = points.length === 1 ? KIA2LOX_L.records_one : KIA2LOX_L.records_other.replace("{n}", points.length);
 				rangeLabel.textContent = rangeText + " (" + countText + ")";
 			}
 
 			if (points.length === 0) {
 				var msg = svgEl("text", { x: W / 2, y: H / 2, "text-anchor": "middle", class: "kia2lox-chart-axis-label" });
-				msg.textContent = "Keine Daten in diesem Zeitraum";
+				msg.textContent = KIA2LOX_L.chart_no_data;
 				dynamic.appendChild(msg);
 				return;
 			}
@@ -470,8 +476,8 @@ require "inc_header.php";
 					x: p.x, y: H - 6, "text-anchor": "middle", class: "kia2lox-chart-axis-label"
 				});
 				label.textContent = currentRange === "24h"
-					? p.date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-					: p.date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+					? p.date.toLocaleTimeString(CHART_LOCALE, { hour: '2-digit', minute: '2-digit' })
+					: p.date.toLocaleDateString(CHART_LOCALE, { day: '2-digit', month: '2-digit' });
 				dynamic.appendChild(label);
 			}
 

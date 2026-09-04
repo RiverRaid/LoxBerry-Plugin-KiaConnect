@@ -28,7 +28,7 @@ if ($key !== "") {
 
 if ($vehicle === null) {
 	http_response_code(403);
-	echo "ERROR: ungueltiger Key\n";
+	echo "ERROR: " . kia2lox_t("ERRORS.INVALID_KEY") . "\n";
 	exit;
 }
 

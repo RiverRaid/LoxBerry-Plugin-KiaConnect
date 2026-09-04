@@ -11,7 +11,7 @@ $version = LBSystem::pluginversion();
 
 $vehicles = kia2lox_load_vehicles();
 if (empty($vehicles)) {
-	$vehicles = [kia2lox_default_vehicle("Fahrzeug 1", "v1")];
+	$vehicles = [kia2lox_default_vehicle(kia2lox_t("VEHICLES.DEFAULT_NAME", ["n" => 1]), "v1")];
 	kia2lox_save_vehicles($vehicles);
 }
 
@@ -63,27 +63,27 @@ require "inc_header.php";
 	<div class="kia2lox-card">
 		<div class="kia2lox-card-head">
 			<div>
-				<h2>Log</h2>
+				<h2><?php echo htmlspecialchars(kia2lox_t("LOG.TITLE")); ?></h2>
 				<p class="kia2lox-desc">
-					Protokoll aller Abfrage-Versuche (alle Fahrzeuge zusammen, in der Reihenfolge wie abgefragt).
+					<?php echo htmlspecialchars(kia2lox_t("LOG.DESC")); ?>
 					<?php if ($log_total > $max_lines): ?>
-						Zeigt die letzten <?php echo $max_lines; ?> von <?php echo $log_total; ?> Zeilen.
+						<?php echo htmlspecialchars(kia2lox_t("LOG.TRUNCATED", ["shown" => $max_lines, "total" => $log_total])); ?>
 					<?php endif; ?>
 				</p>
 			</div>
 			<div class="kia2lox-log-actions">
-				<a class="kia2lox-vehicle-pill-add" href="log.php?vehicle=<?php echo urlencode($active_id); ?>">Aktualisieren</a>
+				<a class="kia2lox-vehicle-pill-add" href="log.php?vehicle=<?php echo urlencode($active_id); ?>"><?php echo htmlspecialchars(kia2lox_t("LOG.REFRESH_BUTTON")); ?></a>
 				<form method="post" action="log.php"
-				      onsubmit="return confirm('Log wirklich unwiderruflich l&ouml;schen?');">
+				      onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(kia2lox_t("LOG.CLEAR_CONFIRM"))); ?>);">
 					<input type="hidden" name="kia2lox_action" value="clear_log">
 					<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($active_id); ?>">
-					<button type="submit" class="kia2lox-btn-danger">Log l&ouml;schen</button>
+					<button type="submit" class="kia2lox-btn-danger"><?php echo htmlspecialchars(kia2lox_t("LOG.CLEAR_BUTTON")); ?></button>
 				</form>
 			</div>
 		</div>
 
 		<?php if (!$log_exists || trim($log_display) === ""): ?>
-			<p class="kia2lox-hint">Noch keine Log-Eintr&auml;ge vorhanden. Die erste Abfrage l&auml;uft sp&auml;testens beim n&auml;chsten Cron-Durchlauf (alle 5 Minuten).</p>
+			<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("LOG.EMPTY_HINT")); ?></p>
 		<?php else: ?>
 			<pre class="kia2lox-log-box" id="kia2lox-log-box"><?php echo htmlspecialchars($log_display); ?></pre>
 		<?php endif; ?>

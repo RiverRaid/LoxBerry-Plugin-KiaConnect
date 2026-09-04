@@ -12,6 +12,27 @@ define("KIA2LOX_FORCE_DEFAULT_TIMES", [
 	4 => ["07:00", "11:00", "15:00", "19:00"],
 ]);
 
+// Laedt die UI-Texte passend zur LoxBerry-Systemsprache (mit Fallback auf
+// Englisch fuer fehlende Schluessel), einmal pro Request.
+function kia2lox_lang() {
+	static $lang = null;
+	if ($lang === null) {
+		$lang = LBSystem::readlanguage(null, "kia2lox.ini", false);
+	}
+	return $lang;
+}
+
+// Uebersetzten Text zu $key liefern, mit optionalem {platzhalter}-Ersatz,
+// z.B. kia2lox_t("VEHICLES.REMOVE_CONFIRM", ["name" => $v["name"]]).
+function kia2lox_t($key, $vars = []) {
+	$lang = kia2lox_lang();
+	$text = isset($lang[$key]) ? $lang[$key] : $key;
+	foreach ($vars as $name => $value) {
+		$text = str_replace("{" . $name . "}", $value, $text);
+	}
+	return $text;
+}
+
 function kia2lox_config_path() {
 	global $lbpconfigdir;
 	return $lbpconfigdir . "/pluginconfig.json";
@@ -299,7 +320,7 @@ function kia2lox_test_login($username, $password, $pin) {
 	$script = $lbpbindir . "/kia2lox_test_login.py";
 
 	if (!is_executable($python) || !file_exists($script)) {
-		return ["ok" => false, "error" => "Python-Umgebung nicht gefunden. Ist die Installation abgeschlossen?"];
+		return ["ok" => false, "error" => kia2lox_t("ERRORS.PYTHON_MISSING")];
 	}
 
 	$descriptorspec = [
@@ -309,7 +330,7 @@ function kia2lox_test_login($username, $password, $pin) {
 	];
 	$process = proc_open([$python, $script], $descriptorspec, $pipes);
 	if (!is_resource($process)) {
-		return ["ok" => false, "error" => "Login-Test konnte nicht gestartet werden."];
+		return ["ok" => false, "error" => kia2lox_t("ERRORS.LOGIN_TEST_START_FAILED")];
 	}
 
 	$payload = json_encode(["username" => $username, "password" => $password, "pin" => $pin]);
@@ -325,7 +346,7 @@ function kia2lox_test_login($username, $password, $pin) {
 	$result = json_decode($stdout, true);
 	if (!is_array($result) || !isset($result["ok"])) {
 		$detail = trim($stderr) !== "" ? (": " . trim($stderr)) : "";
-		return ["ok" => false, "error" => "Unerwartete Antwort vom Login-Test" . $detail];
+		return ["ok" => false, "error" => kia2lox_t("ERRORS.LOGIN_TEST_UNEXPECTED", ["detail" => $detail])];
 	}
 	return $result;
 }
@@ -341,7 +362,7 @@ function kia2lox_manual_refresh($vehicle_id, $force = true) {
 	// getestet wurden, erst gar keinen Python-Prozess starten.
 	foreach (kia2lox_load_vehicles() as $v) {
 		if ($v["id"] === $vehicle_id && empty($v["kia_connected"])) {
-			return ["ok" => false, "error" => "Zugangsdaten für dieses Fahrzeug wurden noch nicht erfolgreich getestet."];
+			return ["ok" => false, "error" => kia2lox_t("ERRORS.CREDENTIALS_NOT_TESTED")];
 		}
 	}
 
@@ -349,7 +370,7 @@ function kia2lox_manual_refresh($vehicle_id, $force = true) {
 	$script = $lbpbindir . "/kia2lox_poll.py";
 
 	if (!is_executable($python) || !file_exists($script)) {
-		return ["ok" => false, "error" => "Python-Umgebung nicht gefunden. Ist die Installation abgeschlossen?"];
+		return ["ok" => false, "error" => kia2lox_t("ERRORS.PYTHON_MISSING")];
 	}
 
 	$command = [$python, $script, "--vehicle", $vehicle_id];
@@ -364,7 +385,7 @@ function kia2lox_manual_refresh($vehicle_id, $force = true) {
 	];
 	$process = proc_open($command, $descriptorspec, $pipes);
 	if (!is_resource($process)) {
-		return ["ok" => false, "error" => "Aktualisierung konnte nicht gestartet werden."];
+		return ["ok" => false, "error" => kia2lox_t("ERRORS.REFRESH_START_FAILED")];
 	}
 
 	fclose($pipes[0]);

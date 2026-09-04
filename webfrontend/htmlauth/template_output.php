@@ -18,7 +18,7 @@ foreach ($vehicles as $v) {
 }
 if ($vehicle === null) {
 	http_response_code(404);
-	echo "Fahrzeug nicht gefunden.";
+	echo kia2lox_t("ERRORS.VEHICLE_NOT_FOUND");
 	exit;
 }
 
@@ -30,7 +30,7 @@ $poll_path = kia2lox_xml_attr("/plugins/kia2lox/poll.php?key=" . $key);
 $refresh_path = kia2lox_xml_attr("/plugins/kia2lox/refresh.php?key=" . $key);
 
 $xml = '<?xml version="1.0" encoding="utf-8"?>' . "\n"
-	. '<VirtualOut HintText="" Title="' . $title . '" Comment="Actions for Kia2Lox Plugin" Address="' . $address . '" CmdInit="" CloseAfterSend="true" CmdSep=";">' . "\n"
+	. '<VirtualOut HintText="" Title="' . $title . '" Comment="' . kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_OUTPUT")) . '" Address="' . $address . '" CmdInit="" CloseAfterSend="true" CmdSep=";">' . "\n"
 	. "\t" . '<Info templateType="3" minVersion="17010727"/>' . "\n"
 	. "\t" . '<VirtualOutCmd Title="Passive Refresh" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="' . $poll_path . '" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" CmdAnswer="" Analog="false" Repeat="0" RepeatRate="0" HintText="" Documentation="Triggers a passive refresh, does not wake up the car. Uses less of the 12V battery"/>' . "\n"
 	. "\t" . '<VirtualOutCmd Title="Force Refresh" Comment="" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="' . $refresh_path . '" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" CmdAnswer="" Analog="false" Repeat="0" RepeatRate="0" HintText="" Documentation="Triggers a force refresh, wakes up the car. Uses more of the 12V battery"/>' . "\n"

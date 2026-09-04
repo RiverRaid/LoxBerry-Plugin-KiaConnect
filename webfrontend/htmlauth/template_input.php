@@ -18,7 +18,7 @@ foreach ($vehicles as $v) {
 }
 if ($vehicle === null) {
 	http_response_code(404);
-	echo "Fahrzeug nicht gefunden.";
+	echo kia2lox_t("ERRORS.VEHICLE_NOT_FOUND");
 	exit;
 }
 
@@ -29,15 +29,32 @@ $port = (int)$vehicle["udp_target_port"];
 // Python-Script sendet immer dieselben Schluessel), nur Titel und Port
 // des virtuellen Eingangs selbst sind pro Fahrzeug unterschiedlich.
 $commands = <<<'XML'
-	<VirtualInUdpCmd Title="SOC" Comment="Battery" Address="" Check="SOC=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="0" MaxVal="100" Unit="&lt;v&gt;%" HintText="" Documentation="State of Charge"/>
-	<VirtualInUdpCmd Title="Range" Comment="Range" Address="" Check="RANGE=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="0" MaxVal="999" Unit="&lt;v&gt; km" HintText=""/>
-	<VirtualInUdpCmd Title="Charging" Comment="Charging" Address="" Check="CHARGING=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText=""/>
-	<VirtualInUdpCmd Title="Plugged" Comment="Plugged" Address="" Check="PLUGGED=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="&lt;v&gt;" HintText="" Documentation="This is not a simple 0/1, but comes directly from the Kia Connect API with several possible numerical values (0 = not plugged in, 2 = plugged in, possibly other codes depending on the vehicle/charge status) - therefore set up as an analog input, not digital, otherwise intermediate values would be lost."/>
-	<VirtualInUdpCmd Title="Full" Comment="Battery full" Address="" Check="FULL=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText="" Documentation="Triggers if the battery is charged to 100% for more than 3 hours"/>
-	<VirtualInUdpCmd Title="Fullparked" Comment="Battery full &amp; still connected" Address="" Check="FULLPARKED=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText="" Documentation="Triggers if the battery is charged to 100% for more than 3 hours and the charging plug is still connected"/>
-	<VirtualInUdpCmd Title="Recharge100" Comment="Recharge appreciated" Address="" Check="RECHARGE100=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText="" Documentation="Triggers if not fully charged for 30 days"/>
-	<VirtualInUdpCmd Title="Lowbattery" Comment="Battery low" Address="" Check="LOWBATTERY=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText="" Documentation="Triggers if the battery is below 10% and not charging for more than 3 hours"/>
+	<VirtualInUdpCmd Title="SOC" Comment="{{COMMENT_SOC}}" Address="" Check="SOC=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="0" MaxVal="100" Unit="&lt;v&gt;%" HintText="" Documentation="State of Charge"/>
+	<VirtualInUdpCmd Title="Range" Comment="{{COMMENT_RANGE}}" Address="" Check="RANGE=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="0" MaxVal="999" Unit="&lt;v&gt; km" HintText=""/>
+	<VirtualInUdpCmd Title="Charging" Comment="{{COMMENT_CHARGING}}" Address="" Check="CHARGING=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText=""/>
+	<VirtualInUdpCmd Title="Plugged" Comment="{{COMMENT_PLUGGED}}" Address="" Check="PLUGGED=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="&lt;v&gt;" HintText="" Documentation="This is not a simple 0/1, but comes directly from the Kia Connect API with several possible numerical values (0 = not plugged in, 2 = plugged in, possibly other codes depending on the vehicle/charge status) - therefore set up as an analog input, not digital, otherwise intermediate values would be lost."/>
+	<VirtualInUdpCmd Title="Full" Comment="{{COMMENT_FULL}}" Address="" Check="FULL=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText="" Documentation="Triggers if the battery is charged to 100% for more than 3 hours"/>
+	<VirtualInUdpCmd Title="Fullparked" Comment="{{COMMENT_FULLPARKED}}" Address="" Check="FULLPARKED=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText="" Documentation="Triggers if the battery is charged to 100% for more than 3 hours and the charging plug is still connected"/>
+	<VirtualInUdpCmd Title="Recharge100" Comment="{{COMMENT_RECHARGE100}}" Address="" Check="RECHARGE100=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText="" Documentation="Triggers if not fully charged for 30 days"/>
+	<VirtualInUdpCmd Title="Lowbattery" Comment="{{COMMENT_LOWBATTERY}}" Address="" Check="LOWBATTERY=\v" Signed="true" Analog="false" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="-10000" MaxVal="10000" Unit="" HintText="" Documentation="Triggers if the battery is below 10% and not charging for more than 3 hours"/>
 XML;
+
+// Platzhalter statt echter PHP-Interpolation, damit das \v in den
+// Check-Attributen oben (NOWDOC) buchstaeblich erhalten bleibt.
+$commands = str_replace(
+	["{{COMMENT_SOC}}", "{{COMMENT_RANGE}}", "{{COMMENT_CHARGING}}", "{{COMMENT_PLUGGED}}", "{{COMMENT_FULL}}", "{{COMMENT_FULLPARKED}}", "{{COMMENT_RECHARGE100}}", "{{COMMENT_LOWBATTERY}}"],
+	[
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_SOC")),
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_RANGE")),
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_CHARGING")),
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_PLUGGED")),
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_FULL")),
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_FULLPARKED")),
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_RECHARGE100")),
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_LOWBATTERY")),
+	],
+	$commands
+);
 
 $xml = '<?xml version="1.0" encoding="utf-8"?>' . "\n"
 	. '<VirtualInUdp HintText="Receives Date from the Kia2Lox plugin" Title="' . $title . '" Comment="Kia2Lox" Address="" Port="' . $port . '">' . "\n"
