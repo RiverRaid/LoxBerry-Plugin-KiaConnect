@@ -1,0 +1,7 @@
+{
+  "username": "deine-email@beispiel.at",
+  "password": "dein-kia-connect-passwort",
+  "pin": "",
+  "udp_target_ip": "192.168.20.2",
+  "udp_target_port": 7051
+}

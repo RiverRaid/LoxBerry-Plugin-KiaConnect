@@ -1,0 +1,13 @@
+# Lokale Zugangsdaten - niemals committen
+01_test/config.json
+**/config.json
+*.pyc
+__pycache__/
+
+# Python venv (wird bei der Installation auf dem LoxBerry erzeugt)
+venv/
+.venv/
+
+# Editor-/OS-Muell
+.DS_Store
+Thumbs.db
