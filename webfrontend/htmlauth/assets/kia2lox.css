@@ -7,9 +7,15 @@
 	--bg: #E6E8EA;
 	--surface: #FFFFFF;
 	--surface-alt: #F5F6F7;
+	--card-info-bg: #D8DBDE;
 	--text: #1A1D20;
 	--text-muted: #5B6267;
 	--border: #DCDFE1;
+
+	--kia-900: #16191C;
+	--kia-800: #2B3136;
+	--kia-700: #3C4348;
+	--kia-200: #C7CACC;
 
 	--accent: #33454F;
 	--accent-strong: #1F2E36;
@@ -29,9 +35,12 @@
 		--bg: #101214;
 		--surface: #1C2024;
 		--surface-alt: #22262A;
+		--card-info-bg: #282E33;
 		--text: #E7E9EA;
 		--text-muted: #9AA1A6;
 		--border: #31363B;
+
+		--kia-200: #3A4045;
 
 		--accent: #7C8B93;
 		--accent-strong: #9AAAB2;
@@ -48,10 +57,87 @@
 	}
 }
 
-.kia2lox-page {
+body { background: var(--bg); }
+
+.kia2lox-shell {
+	max-width: 1200px;
+	margin: 20px auto 0;
+	border-radius: 14px;
+	overflow: hidden;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.12);
 	font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.kia2lox-hero {
+	position: relative;
+	background:
+		radial-gradient(1200px 400px at 15% -20%, rgba(255,255,255,0.06), transparent 60%),
+		linear-gradient(115deg, var(--kia-900) 0%, var(--kia-800) 45%, var(--kia-700) 100%);
+	color: #F2F3F4;
+	padding: 26px 32px 20px;
+}
+.kia2lox-hero-inner {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+.kia2lox-hero h1 {
+	font-size: 24px;
+	font-weight: 700;
+	margin: 0 0 6px;
+	letter-spacing: -0.01em;
+}
+.kia2lox-hero p {
+	margin: 0;
+	color: #C6CBCE;
+	font-size: 14px;
+}
+.kia2lox-version-badge {
+	font-family: Consolas, monospace;
+	font-size: 12px;
+	color: #C6CBCE;
+	background: rgba(255,255,255,0.08);
+	border: 1px solid rgba(255,255,255,0.14);
+	border-radius: 20px;
+	padding: 5px 12px;
+	white-space: nowrap;
+}
+
+.kia2lox-tabs {
+	background: var(--kia-900);
+	border-top: 1px solid rgba(255,255,255,0.06);
+	display: flex;
+	gap: 2px;
+	padding: 0 24px;
+	overflow-x: auto;
+}
+.kia2lox-tab {
+	display: inline-block;
+	color: #AEB4B8;
+	font-size: 14px;
+	font-weight: 500;
+	padding: 12px 16px;
+	text-decoration: none;
+	border-bottom: 3px solid transparent;
+	white-space: nowrap;
+}
+.kia2lox-tab.active {
+	color: #F2F3F4;
+	background: rgba(255,255,255,0.06);
+	border-bottom-color: var(--kia-200);
+}
+.kia2lox-tab.disabled {
+	color: #6C7378;
+	cursor: default;
+}
+
+.kia2lox-page {
 	color: var(--text);
-	max-width: 900px;
+	font-family: 'Segoe UI', system-ui, sans-serif;
+	max-width: 1200px;
+	margin: 18px auto 0;
+	padding: 0 24px 40px;
 }
 
 .kia2lox-vehicle-bar {

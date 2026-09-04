@@ -106,6 +106,24 @@ LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plug
 ?>
 <link rel="stylesheet" href="assets/kia2lox.css">
 
+<div class="kia2lox-shell">
+	<div class="kia2lox-hero">
+		<div class="kia2lox-hero-inner">
+			<div>
+				<h1>Kia2Lox</h1>
+				<p>Sendet den Ladezustand eines Kia e-Autos per UDP an Loxone</p>
+			</div>
+			<span class="kia2lox-version-badge">V<?php echo htmlspecialchars($version); ?></span>
+		</div>
+	</div>
+	<div class="kia2lox-tabs">
+		<span class="kia2lox-tab disabled" title="Folgt in einer der n&auml;chsten Etappen">&Uuml;bersicht</span>
+		<span class="kia2lox-tab active">Einstellungen</span>
+		<span class="kia2lox-tab disabled" title="Folgt in einer der n&auml;chsten Etappen">Log</span>
+		<span class="kia2lox-tab disabled" title="Folgt in einer der n&auml;chsten Etappen">Hilfe</span>
+	</div>
+</div>
+
 <div class="kia2lox-page">
 
 	<?php if (count($vehicles) > 1): ?>
