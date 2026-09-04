@@ -4,9 +4,11 @@ Kia2Lox - fragt fuer alle konfigurierten Fahrzeuge den Ladezustand ueber
 Kia Connect ab und sendet die Werte per UDP an den jeweils hinterlegten
 Loxone Miniserver.
 
-Wird regelmaessig per Cron (cron/cron.30min) aufgerufen. Welches Fahrzeug
-wie oft tatsaechlich abgefragt wird, steuert spaeter jedes Fahrzeug selbst
-ueber sein eigenes Intervall in den Plugin-Einstellungen.
+Wird alle 5 Minuten per Cron (cron/cron.05min) aufgerufen. Ob bei einem
+Durchlauf tatsaechlich abgefragt wird - und ob passiv (gecachter Stand)
+oder per Force-Refresh (weckt das Fahrzeug) - entscheidet jedes Fahrzeug
+selbst anhand seiner eigenen Einstellungen (siehe should_poll_passive_now()
+und should_force_refresh_now()).
 """
 
 import argparse
@@ -37,11 +39,64 @@ FULL_PARKED_HOURS = 3
 # (Empfehlung zum Zellausgleich).
 RECHARGE_REMINDER_DAYS = 30
 
+# Unter diesem Wert gilt der Akku als "niedrig".
+LOW_SOC_THRESHOLD = 10
+
+# Wie lange das Fahrzeug ununterbrochen mit niedrigem Akku und ohne zu
+# laden stehen darf, bevor LOWBATTERY=1 gesendet wird.
+LOW_BATTERY_HOURS = 3
+
+# Wie lange der SOC-Verlauf fuer das Uebersichts-Diagramm aufgehoben wird.
+HISTORY_RETENTION_DAYS = 90
+
 PLUGIN_FOLDER = "kia2lox"
 PCONFIG_BASE = os.environ.get("LBPCONFIG", "/opt/loxberry/config/plugins")
 PDATA_BASE = os.environ.get("LBPDATA", "/opt/loxberry/data/plugins")
 CONFIG_PATH = os.path.join(PCONFIG_BASE, PLUGIN_FOLDER, "pluginconfig.json")
 STATE_PATH = os.path.join(PDATA_BASE, PLUGIN_FOLDER, "state.json")
+
+
+def history_path(vehicle_id: str) -> str:
+    return os.path.join(PDATA_BASE, PLUGIN_FOLDER, f"history_{vehicle_id}.jsonl")
+
+
+def append_history(vehicle_id: str, now: datetime.datetime, soc, charging=None, plugged=None) -> None:
+    """Haengt einen Messpunkt (SOC + Lade-/Steckerstatus) an den Verlauf
+    des Fahrzeugs an (fuer das Ladezustands-Diagramm in der Uebersicht,
+    das die Punkte je nach Status faerbt) und entfernt dabei gleich
+    Eintraege, die aelter als HISTORY_RETENTION_DAYS sind."""
+
+    if soc is None:
+        return
+
+    path = history_path(vehicle_id)
+    cutoff = now - datetime.timedelta(days=HISTORY_RETENTION_DAYS)
+    entries = []
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                    entry_at = datetime.datetime.fromisoformat(entry["at"])
+                except (ValueError, KeyError, TypeError):
+                    continue
+                if entry_at >= cutoff:
+                    entries.append(entry)
+
+    entries.append({
+        "at": now.isoformat(),
+        "soc": soc,
+        "charging": charging,
+        "plugged": plugged,
+    })
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for entry in entries:
+            f.write(json.dumps(entry) + "\n")
 
 
 def load_config() -> dict:
@@ -72,14 +127,21 @@ def save_state(state: dict) -> None:
 def get_vehicle_state(state: dict, vehicle_id: str) -> dict:
     return state.setdefault(
         vehicle_id,
-        {"last_full_charge_at": None, "full_since": None, "full_soc_since": None},
+        {
+            "last_full_charge_at": None,
+            "full_since": None,
+            "full_soc_since": None,
+            "low_since": None,
+            "last_passive_poll_at": None,
+            "poll_log": [],
+        },
     )
 
 
-def update_battery_health_state(vstate: dict, soc: int, plugged, charging: int, now: datetime.datetime) -> tuple[int, int, int]:
+def update_battery_health_state(vstate: dict, soc: int, plugged, charging: int, now: datetime.datetime) -> tuple[int, int, int, int]:
     """Aktualisiert den Zustand fuer die Batteriepflege-Hinweise eines
-    einzelnen Fahrzeugs und gibt (full, full_parked, recharge_needed) als
-    0/1 zurueck.
+    einzelnen Fahrzeugs und gibt (full, full_parked, recharge_needed,
+    low_battery) als 0/1 zurueck.
 
     full:            Akku misst seit FULL_HOURS ununterbrochen >= 100%,
                       unabhaengig von Stecker-/Ladestatus.
@@ -88,10 +150,20 @@ def update_battery_health_state(vstate: dict, soc: int, plugged, charging: int, 
                       Ladegeraet voll herum").
     recharge_needed: seit RECHARGE_REMINDER_DAYS keinen vollen Ladestand
                       mehr erreicht (Zellausgleich empfohlen).
+    low_battery:     Akku ist seit LOW_BATTERY_HOURS ununterbrochen unter
+                      LOW_SOC_THRESHOLD und laedt dabei nicht (Fahrzeug
+                      wurde mit niedrigem Akku stehen gelassen).
     """
 
     is_full = soc is not None and soc >= FULL_SOC_THRESHOLD
     is_idle_full = is_full and bool(plugged) and not charging
+    is_low_idle = soc is not None and soc < LOW_SOC_THRESHOLD and not charging
+
+    if is_low_idle:
+        if not vstate.get("low_since"):
+            vstate["low_since"] = now.isoformat()
+    else:
+        vstate["low_since"] = None
 
     if is_full:
         vstate["last_full_charge_at"] = now.isoformat()
@@ -127,7 +199,73 @@ def update_battery_health_state(vstate: dict, soc: int, plugged, charging: int, 
         if now - last_full_dt >= datetime.timedelta(days=RECHARGE_REMINDER_DAYS):
             recharge_needed = 1
 
-    return full, full_parked, recharge_needed
+    low_battery = 0
+    if vstate.get("low_since"):
+        low_since = datetime.datetime.fromisoformat(vstate["low_since"])
+        if now - low_since >= datetime.timedelta(hours=LOW_BATTERY_HOURS):
+            low_battery = 1
+
+    return full, full_parked, recharge_needed, low_battery
+
+
+def _within_window(enabled, start, end, now: datetime.datetime) -> bool:
+    if not enabled:
+        return True
+    start = start or "00:00"
+    end = end or "23:59"
+    current = now.strftime("%H:%M")
+    if start <= end:
+        return start <= current <= end
+    # Zeitfenster geht ueber Mitternacht (z.B. 22:00 - 06:00).
+    return current >= start or current <= end
+
+
+def should_poll_passive_now(vehicle_config: dict, vstate: dict, now: datetime.datetime) -> bool:
+    """Passive Abfrage: liest nur den zuletzt von Kia Connect gemeldeten
+    (gecachten) Stand, weckt das Fahrzeug nicht auf."""
+
+    mode = vehicle_config.get("passive_mode", "interval")
+    if mode == "never":
+        return False
+
+    if mode == "custom":
+        times = vehicle_config.get("passive_custom_times") or []
+        return now.strftime("%H:%M") in times
+
+    # Default/Fallback: "interval".
+    if not _within_window(
+        vehicle_config.get("passive_window_enabled"),
+        vehicle_config.get("passive_window_from"),
+        vehicle_config.get("passive_window_to"),
+        now,
+    ):
+        return False
+
+    interval = int(vehicle_config.get("passive_interval_minutes", 60) or 60)
+    last_poll = vstate.get("last_passive_poll_at")
+    if not last_poll:
+        return True
+    last_poll_dt = datetime.datetime.fromisoformat(last_poll)
+    return now - last_poll_dt >= datetime.timedelta(minutes=interval)
+
+
+def should_force_refresh_now(vehicle_config: dict, now: datetime.datetime) -> bool:
+    """Force-Refresh: weckt das Fahrzeug aktiv fuer einen frischen Stand.
+    Laeuft unabhaengig von der passiven Abfrage zu fest eingestellten
+    Uhrzeiten (typischerweise 1-4x taeglich)."""
+
+    times = vehicle_config.get("force_times") or []
+    return now.strftime("%H:%M") in times
+
+
+def log_poll_attempt(vstate: dict, now: datetime.datetime, kind: str, ok: bool) -> None:
+    """Merkt sich Erfolg/Fehler dieser Abfrage fuer die "Heute geplant"
+    Anzeige in den Einstellungen. Nur der heutige Tag wird behalten."""
+
+    today = now.strftime("%Y-%m-%d")
+    log = vstate.setdefault("poll_log", [])
+    log[:] = [entry for entry in log if entry.get("date") == today]
+    log.append({"date": today, "time": now.strftime("%H:%M"), "kind": kind, "ok": ok})
 
 
 def send_udp(ip: str, port: int, message: str) -> None:
@@ -149,8 +287,7 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
 
     login_result = manager.login()
     if login_result is not True:
-        print(f"FEHLER [{label}]: Login benoetigt zusaetzliche Bestaetigung (OTP/2FA): {login_result}")
-        return
+        raise RuntimeError(f"Login benoetigt zusaetzliche Bestaetigung (OTP/2FA): {login_result}")
 
     udp_ip = vehicle_config["udp_target_ip"]
     udp_port = int(vehicle_config["udp_target_port"])
@@ -168,13 +305,28 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
         charging = 1 if vehicle.ev_battery_is_charging else 0
         plugged = vehicle.ev_battery_is_plugged_in
 
-        full, full_parked, recharge_needed = update_battery_health_state(vstate, soc, plugged, charging, now)
+        full, full_parked, recharge_needed, low_battery = update_battery_health_state(vstate, soc, plugged, charging, now)
+
+        vstate["last_values"] = {
+            "soc": soc,
+            "range_km": range_km,
+            "charging": charging,
+            "plugged": plugged,
+            "full": full,
+            "full_parked": full_parked,
+            "recharge_needed": recharge_needed,
+            "low_battery": low_battery,
+            "kia_name": vehicle.name,
+            "kia_last_updated_at": str(vehicle.last_updated_at) if vehicle.last_updated_at else None,
+            "updated_at": now.isoformat(),
+        }
+        append_history(vehicle_config["id"], now, soc, charging=charging, plugged=plugged)
 
         print(
             f"  [{label}] {vehicle.name}: SOC={soc}% RANGE={range_km}km "
             f"CHARGING={charging} PLUGGED={plugged} "
             f"FULL={full} FULLPARKED={full_parked} RECHARGE100={recharge_needed} "
-            f"(Stand: {vehicle.last_updated_at})"
+            f"LOWBATTERY={low_battery} (Stand: {vehicle.last_updated_at})"
         )
 
         send_udp(udp_ip, udp_port, f"SOC={soc}")
@@ -184,6 +336,7 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
         send_udp(udp_ip, udp_port, f"FULL={full}")
         send_udp(udp_ip, udp_port, f"FULLPARKED={full_parked}")
         send_udp(udp_ip, udp_port, f"RECHARGE100={recharge_needed}")
+        send_udp(udp_ip, udp_port, f"LOWBATTERY={low_battery}")
 
 
 def main() -> None:
@@ -196,8 +349,8 @@ def main() -> None:
     state = load_state()
 
     now = datetime.datetime.now().astimezone()
-    mode = "force" if args.force else "passiv"
-    print(f"[{now.isoformat(timespec='seconds')}] Kia2Lox Abfrage startet ({mode})")
+    trigger = "manuell/HTTP-Trigger" if args.vehicle else "Cron"
+    print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Kia2Lox Abfrage startet ({trigger})")
 
     vehicles = config["vehicles"]
     if args.vehicle:
@@ -210,17 +363,53 @@ def main() -> None:
         print("Keine Fahrzeuge konfiguriert, nichts zu tun.")
         return
 
+    # Ein explizit per --vehicle angestossener Aufruf (manueller
+    # "Jetzt aktualisieren"-Button, spaeter HTTP-Trigger) fragt immer
+    # sofort mit --force ab. Beim regulaeren Cron-Durchlauf ueber alle
+    # Fahrzeuge entscheidet jedes Fahrzeug anhand seiner eigenen
+    # Passiv-/Force-Refresh-Einstellungen, ob und wie es abgefragt wird.
+    explicit_vehicle = bool(args.vehicle)
+
     for vehicle_config in vehicles:
         vehicle_id = vehicle_config.get("id")
+        label = vehicle_config.get("name", vehicle_id)
         if not vehicle_id:
             print(f"FEHLER: Fahrzeug ohne id in der Konfiguration uebersprungen: {vehicle_config.get('name')}")
             continue
+
+        # Solange die Zugangsdaten noch nie erfolgreich getestet wurden
+        # (kia_connected), keine Kia-Connect-Anfragen versuchen - auch
+        # nicht bei einem expliziten manuellen/HTTP-Trigger-Aufruf. Bei
+        # einem expliziten Aufruf zaehlt das als Fehler, damit der Aufrufer
+        # (PHP) das erkennt und keinen Erfolg meldet.
+        if not vehicle_config.get("kia_connected"):
+            if explicit_vehicle:
+                print(f"FEHLER [{label}]: Zugangsdaten noch nicht erfolgreich getestet - keine Abfrage moeglich.")
+            else:
+                print(f"[{label}] uebersprungen: Zugangsdaten noch nicht erfolgreich getestet.")
+            continue
+
         vstate = get_vehicle_state(state, vehicle_id)
+
+        if explicit_vehicle:
+            do_force = args.force
+            do_poll = True
+        else:
+            do_force = should_force_refresh_now(vehicle_config, now)
+            do_poll = do_force or should_poll_passive_now(vehicle_config, vstate, now)
+
+        if not do_poll:
+            continue
+
+        vstate["last_passive_poll_at"] = now.isoformat()
+        ok = True
         try:
-            poll_vehicle_config(vehicle_config, vstate, args.force, now)
+            poll_vehicle_config(vehicle_config, vstate, do_force, now)
         except Exception as exc:  # noqa: BLE001 - ein Fahrzeug darf die anderen nicht blockieren
-            label = vehicle_config.get("name", vehicle_id)
+            ok = False
             print(f"FEHLER [{label}]: Abfrage fehlgeschlagen: {exc}")
+        vstate["last_poll_ok"] = ok
+        log_poll_attempt(vstate, now, "force" if do_force else "passive", ok)
 
     save_state(state)
     print("Fertig.")

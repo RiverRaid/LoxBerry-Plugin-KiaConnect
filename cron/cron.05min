@@ -1,11 +1,13 @@
 #!/bin/bash
 
-# cron/cron.30min - wird von LoxBerry alle 30 Minuten aufgerufen.
-# Installiert nach $LBHOMEDIR/system/cron/cron.30min/kia2lox. Laeuft als
+# cron/cron.05min - wird von LoxBerry alle 5 Minuten aufgerufen.
+# Installiert nach $LBHOMEDIR/system/cron/cron.05min/kia2lox. Laeuft als
 # Benutzer "loxberry".
 #
-# Die eigentliche Abfrage passiert in bin/kia2lox_poll.py innerhalb der
-# eigenen Python-venv (angelegt von postinstall.sh).
+# Die 5-Minuten-Taktung ist nur der "Puls": ob ein Fahrzeug bei einem
+# Durchlauf wirklich abgefragt wird, entscheidet kia2lox_poll.py selbst
+# anhand des pro Fahrzeug eingestellten Intervalls/Zeitfensters
+# (should_poll_now() in bin/kia2lox_poll.py).
 
 set -a
 source /etc/environment

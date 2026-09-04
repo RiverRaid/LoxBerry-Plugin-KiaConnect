@@ -22,9 +22,13 @@
 	--success: #2F9E5B;
 	--success-bg: #E4F5EA;
 	--success-bg-strong: #BFE9CE;
+	--warning: #B9791F;
+	--warning-bg: #FBF0DD;
+	--warning-border: #EDD79E;
 	--danger: #C1443B;
 	--danger-bg: #FBEAEA;
 	--danger-border: #F0C3C3;
+	--info: #2D6CB5;
 
 	--btn-disabled-bg: #DCDFE1;
 	--btn-disabled-text: #8B9297;
@@ -47,9 +51,13 @@
 		--success: #3FBD74;
 		--success-bg: #173225;
 		--success-bg-strong: #1F4A31;
+		--warning: #D9A249;
+		--warning-bg: #332A16;
+		--warning-border: #5C4A24;
 		--danger: #E17A72;
 		--danger-bg: #3A2222;
 		--danger-border: #5C2E2E;
+		--info: #6EA8E5;
 
 		--btn-disabled-bg: #2C3135;
 		--btn-disabled-text: #6B7278;
@@ -66,7 +74,7 @@ body { background: var(--bg); }
    Sicherheitsnetz. */
 .kia2lox-shell, .kia2lox-shell *,
 .kia2lox-page, .kia2lox-page * {
-	text-shadow: none;
+	text-shadow: none !important;
 	box-sizing: border-box;
 }
 .kia2lox-page button,
@@ -121,6 +129,95 @@ body { background: var(--bg); }
 	padding: 5px 12px;
 	white-space: nowrap;
 }
+.kia2lox-hero-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.kia2lox-settings-gear-btn {
+	appearance: none !important;
+	border: 1px solid rgba(255,255,255,0.14) !important;
+	background: rgba(255,255,255,0.08) !important;
+	color: #F2F3F4 !important;
+	width: 30px !important;
+	height: 30px !important;
+	min-width: 30px !important;
+	max-width: 30px !important;
+	min-height: 30px !important;
+	max-height: 30px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border-radius: 50% !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	box-shadow: none !important;
+	cursor: pointer;
+	flex: none;
+}
+.kia2lox-settings-gear-btn:hover { background: rgba(255,255,255,0.16) !important; }
+.kia2lox-settings-gear-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.kia2lox-boxes-popover {
+	position: fixed;
+	width: 250px;
+	background: var(--surface);
+	color: var(--text);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 16px;
+	box-shadow: 0 16px 40px rgba(0,0,0,0.24);
+	z-index: 50;
+}
+.kia2lox-boxes-popover-title {
+	margin: 0 0 10px;
+	font-size: 14px;
+	font-weight: 700;
+}
+.kia2lox-boxes-popover-list label {
+	display: flex !important;
+	align-items: center !important;
+	gap: 9px;
+	font-size: 13.5px;
+	padding: 6px 0 !important;
+	margin: 0 !important;
+	background: none !important;
+	border: none !important;
+	width: auto !important;
+	height: auto !important;
+	cursor: pointer;
+}
+.kia2lox-boxes-popover-list label::before,
+.kia2lox-boxes-popover-list label::after {
+	content: none !important;
+}
+.kia2lox-boxes-popover-list input[type="checkbox"] {
+	appearance: auto !important;
+	-webkit-appearance: checkbox !important;
+	-moz-appearance: checkbox !important;
+	width: 16px !important;
+	height: 16px !important;
+	min-width: 16px !important;
+	max-width: 16px !important;
+	min-height: 16px !important;
+	max-height: 16px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: none !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	background: none !important;
+	accent-color: var(--accent-strong);
+	cursor: pointer;
+	flex: none;
+}
+.kia2lox-boxes-popover-footer {
+	margin: 8px 0 0;
+	padding-top: 10px;
+	border-top: 1px solid var(--border);
+	font-size: 11.5px;
+	color: var(--text-muted);
+}
 
 .kia2lox-tabs {
 	background: var(--kia-900);
@@ -130,23 +227,28 @@ body { background: var(--bg); }
 	padding: 0 24px;
 	overflow-x: auto;
 }
-.kia2lox-tab {
+.kia2lox-tab,
+.kia2lox-tab:link,
+.kia2lox-tab:visited {
 	display: inline-block;
-	color: #AEB4B8;
+	color: #AEB4B8 !important;
 	font-size: 14px;
 	font-weight: 500;
 	padding: 12px 16px;
-	text-decoration: none;
+	text-decoration: none !important;
 	border-bottom: 3px solid transparent;
 	white-space: nowrap;
 }
-.kia2lox-tab.active {
-	color: #F2F3F4;
+.kia2lox-tab:hover { color: #F2F3F4 !important; }
+.kia2lox-tab.active,
+.kia2lox-tab.active:link,
+.kia2lox-tab.active:visited {
+	color: #F2F3F4 !important;
 	background: rgba(255,255,255,0.06);
 	border-bottom-color: var(--kia-200);
 }
 .kia2lox-tab.disabled {
-	color: #6C7378;
+	color: #6C7378 !important;
 	cursor: default;
 }
 
@@ -177,48 +279,58 @@ body { background: var(--bg); }
 	background: var(--success-bg);
 	border-color: var(--success-bg-strong);
 }
-.kia2lox-vehicle-pill-label {
+.kia2lox-vehicle-pill-label,
+.kia2lox-vehicle-pill-label:link,
+.kia2lox-vehicle-pill-label:visited {
 	padding: 8px 14px;
-	color: var(--text-muted);
+	color: var(--text-muted) !important;
 	font-size: 13px;
 	font-weight: 600;
 	text-decoration: none;
 }
-.kia2lox-vehicle-pill.active .kia2lox-vehicle-pill-label { color: var(--text); }
-.kia2lox-vehicle-pill-label:hover { color: var(--text); }
+.kia2lox-vehicle-pill.active .kia2lox-vehicle-pill-label,
+.kia2lox-vehicle-pill.active .kia2lox-vehicle-pill-label:link,
+.kia2lox-vehicle-pill.active .kia2lox-vehicle-pill-label:visited {
+	color: var(--text) !important;
+}
+.kia2lox-vehicle-pill-label:hover { color: var(--text) !important; }
 .kia2lox-vehicle-pill-remove-form { display: flex; margin: 0; }
 .kia2lox-vehicle-pill-remove {
-	appearance: none;
-	border: none;
-	border-left: 1px solid var(--border);
-	background: transparent;
-	color: var(--text-muted);
+	appearance: none !important;
+	border: none !important;
+	border-left: 1px solid var(--border) !important;
+	background: transparent !important;
+	color: var(--text-muted) !important;
 	width: 26px;
 	min-width: 26px;
 	height: auto;
 	font-size: 13px;
 	line-height: 1;
-	padding: 0;
-	margin: 0;
-	border-radius: 0;
-	box-shadow: none;
+	padding: 0 !important;
+	margin: 0 !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
 	cursor: pointer;
 }
 .kia2lox-vehicle-pill-remove:hover { color: var(--danger); }
-.kia2lox-vehicle-pill-add {
-	appearance: none;
-	border: 1px dashed var(--border);
-	background: transparent;
-	color: var(--text-muted);
-	border-radius: 20px;
-	padding: 8px 14px;
-	margin: 0;
+.kia2lox-vehicle-pill-add,
+.kia2lox-vehicle-pill-add:link,
+.kia2lox-vehicle-pill-add:visited {
+	appearance: none !important;
+	border: 1px solid var(--accent) !important;
+	background: transparent !important;
+	color: var(--accent-strong) !important;
+	border-radius: 7px !important;
+	padding: 8px 14px !important;
+	margin: 0 !important;
 	font-size: 13px;
 	font-weight: 600;
-	box-shadow: none;
+	text-decoration: none !important;
+	box-shadow: none !important;
 	cursor: pointer;
+	align-self: center;
 }
-.kia2lox-vehicle-pill-add:hover { color: var(--text); border-color: var(--accent); }
+.kia2lox-vehicle-pill-add:hover { background: var(--surface) !important; }
 
 .kia2lox-message {
 	border-radius: 10px;
@@ -244,6 +356,21 @@ body { background: var(--bg); }
 	padding: 22px 24px;
 	margin-bottom: 18px;
 }
+.kia2lox-card.kia2lox-card-connected {
+	background: var(--success-bg);
+	border-color: var(--success-bg-strong);
+}
+.kia2lox-card.kia2lox-card-incomplete {
+	background: var(--danger-bg);
+	border-color: var(--danger-border);
+}
+
+.kia2lox-page .kia2lox-field input.kia2lox-field-invalid,
+.kia2lox-page .kia2lox-field input.kia2lox-field-invalid.ui-body-a,
+.kia2lox-page .kia2lox-field input.kia2lox-field-invalid.ui-focus {
+	background-color: var(--danger-bg) !important;
+	border-color: var(--danger) !important;
+}
 .kia2lox-card h2, .kia2lox-card h3 {
 	margin: 0 0 4px;
 	font-weight: 700;
@@ -260,22 +387,86 @@ body { background: var(--bg); }
 .kia2lox-field-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+	align-items: start !important;
 	gap: 16px;
 	margin-bottom: 16px;
 }
-.kia2lox-field { display: flex; flex-direction: column; gap: 6px; }
+.kia2lox-field { display: flex !important; flex-direction: column !important; gap: 6px; margin: 0 !important; }
 .kia2lox-field label { font-size: 13px; font-weight: 600; color: var(--text); }
 .kia2lox-field .kia2lox-hint { font-size: 12px; color: var(--text-muted); margin: -2px 0 0; }
-.kia2lox-field input {
+/* Die zusaetzlichen Selektoren mit .kia2lox-page voran und die
+   moeglichen jQuery-Mobile-Laufzeit-Klassen (.ui-focus, .ui-body-a,
+   .ui-btn-a, ...) sind kein Stilwunsch, sondern noetig, um die
+   Spezifitaet von LoxBerrys eigenem Theme (loxberry.css) zu schlagen:
+   jQuery Mobile haengt bei jedem Fokus eines <input>/<select> global
+   die Klasse "ui-focus" an (unabhaengig von data-role="none"), und
+   loxberry.css stylt ".ui-page-theme-a .ui-focus" damit mit einem
+   gruenen box-shadow (#6dac20) sowie ".ui-body-a" mit einem
+   dunkelgrauen border-color (#8c8c8c). Beide Selektoren sind
+   spezifischer als ein einfaches ".kia2lox-field input", daher
+   gewinnt sonst LoxBerry trotz !important und spaeterem Laden
+   unserer CSS-Datei (Spezifitaet zaehlt vor Reihenfolge). */
+.kia2lox-page .kia2lox-field input,
+.kia2lox-page .kia2lox-field select,
+.kia2lox-page .kia2lox-field input.ui-body-a,
+.kia2lox-page .kia2lox-field select.ui-body-a,
+.kia2lox-page .kia2lox-field input.ui-focus,
+.kia2lox-page .kia2lox-field select.ui-focus,
+.kia2lox-page .kia2lox-field input.ui-btn-a,
+.kia2lox-page .kia2lox-field select.ui-btn-a {
+	box-sizing: border-box !important;
 	font-family: inherit;
 	font-size: 14px;
-	color: var(--text);
-	background: var(--surface-alt);
-	border: 1px solid var(--border);
-	border-radius: 8px;
-	padding: 9px 11px;
+	line-height: 20px;
+	height: 40px !important;
+	min-height: 40px !important;
+	max-height: 40px !important;
+	margin: 0 !important;
+	vertical-align: middle;
+	color: var(--text) !important;
+	background-color: var(--surface-alt) !important;
+	border: 1px solid var(--border) !important;
+	border-color: var(--border) !important;
+	border-width: 1px !important;
+	border-radius: 8px !important;
+	padding: 9px 11px !important;
+	box-shadow: none !important;
+	-webkit-box-shadow: none !important;
+	-moz-box-shadow: none !important;
+	outline: none !important;
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
 }
-.kia2lox-field input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.kia2lox-page .kia2lox-field select,
+.kia2lox-page .kia2lox-field select.ui-body-a,
+.kia2lox-page .kia2lox-field select.ui-focus,
+.kia2lox-page .kia2lox-field select.ui-btn-a {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235B6267' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 8l4.5 4.5L14.5 8'/%3E%3C/svg%3E") !important;
+	background-repeat: no-repeat !important;
+	background-position: right 11px center !important;
+	background-size: 15px !important;
+	padding-right: 34px !important;
+}
+
+/* Browser-Autofill (Chrome/Edge) erzwingt sonst einen gelb-gruenen
+   Hintergrund samt eigenem Rahmen, der unsere Feldfarbe/Border
+   ueberdeckt. */
+.kia2lox-page .kia2lox-field input:-webkit-autofill,
+.kia2lox-page .kia2lox-field input:-webkit-autofill:hover,
+.kia2lox-page .kia2lox-field input:-webkit-autofill:focus {
+	-webkit-text-fill-color: var(--text) !important;
+	-webkit-box-shadow: 0 0 0 1000px var(--surface-alt) inset !important;
+	box-shadow: 0 0 0 1000px var(--surface-alt) inset !important;
+	border: 1px solid var(--border) !important;
+	transition: background-color 9999s ease-in-out 0s;
+}
+.kia2lox-page .kia2lox-field input:focus-visible,
+.kia2lox-page .kia2lox-field select:focus-visible {
+	outline: 2px solid var(--focus) !important;
+	outline-offset: 1px;
+	box-shadow: none !important;
+}
 
 .kia2lox-inline-form {
 	display: flex;
@@ -285,42 +476,611 @@ body { background: var(--bg); }
 }
 
 .kia2lox-btn {
-	appearance: none;
-	border: none;
+	appearance: none !important;
+	border: none !important;
 	font-family: inherit;
 	font-size: 13.5px;
 	font-weight: 600;
-	border-radius: 8px;
-	padding: 9px 18px;
-	margin: 0;
-	box-shadow: none;
+	border-radius: 8px !important;
+	padding: 9px 18px !important;
+	margin: 0 !important;
+	box-shadow: none !important;
 	cursor: pointer;
-	background: var(--success);
-	color: #FFFFFF;
+	background: var(--success) !important;
+	color: #FFFFFF !important;
+	transition: background-color 0.15s ease, color 0.15s ease;
 }
 .kia2lox-btn:hover { filter: brightness(1.05); }
 .kia2lox-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.kia2lox-btn:disabled {
+	background: var(--btn-disabled-bg) !important;
+	color: var(--btn-disabled-text) !important;
+	cursor: not-allowed;
+	filter: none;
+}
 .kia2lox-btn-secondary {
-	appearance: none;
-	border: 1px solid var(--accent);
-	background: transparent;
-	color: var(--accent-strong);
+	appearance: none !important;
+	border: 1px solid var(--accent) !important;
+	background: transparent !important;
+	color: var(--accent-strong) !important;
 	font-family: inherit;
 	font-size: 13px;
 	font-weight: 600;
-	border-radius: 7px;
-	padding: 8px 14px;
+	border-radius: 7px !important;
+	padding: 8px 14px !important;
+	margin: 0 !important;
+	box-shadow: none !important;
 	cursor: pointer;
 }
 .kia2lox-btn-danger {
-	appearance: none;
-	border: none;
-	background: var(--danger);
-	color: #FFFFFF;
+	appearance: none !important;
+	border: none !important;
+	background: var(--danger) !important;
+	color: #FFFFFF !important;
 	font-family: inherit;
 	font-size: 13px;
 	font-weight: 600;
-	border-radius: 7px;
-	padding: 8px 14px;
+	border-radius: 7px !important;
+	padding: 8px 14px !important;
+	margin: 0 !important;
+	box-shadow: none !important;
 	cursor: pointer;
+}
+.kia2lox-btn-danger:hover { filter: brightness(1.08); }
+
+.kia2lox-card-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+.kia2lox-card-head form { margin: 0; }
+.kia2lox-log-actions { display: flex; align-items: center; gap: 8px; }
+
+.kia2lox-checkbox {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text);
+	cursor: pointer;
+}
+.kia2lox-checkbox input {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--accent);
+	cursor: pointer;
+}
+
+.kia2lox-interval-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 0;
+}
+.kia2lox-field-block {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 0 22px;
+}
+.kia2lox-field-block:first-child {
+	padding-left: 0;
+	border-right: 1px solid var(--border);
+}
+.kia2lox-field-block:last-child { padding-right: 0; }
+@media (max-width: 600px) {
+	.kia2lox-field-block:first-child { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+}
+
+#kia2lox-window-toggle { display: flex; flex-direction: column; gap: 10px; }
+
+.kia2lox-times-label {
+	display: block;
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--text-muted);
+	margin: 0 0 6px;
+}
+.kia2lox-times-row,
+#kia2lox-custom-times,
+#kia2lox-force-times {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+.kia2lox-times-row .kia2lox-field,
+#kia2lox-custom-times .kia2lox-field,
+#kia2lox-force-times .kia2lox-field { width: 130px; }
+.kia2lox-times-row .kia2lox-field label,
+#kia2lox-custom-times .kia2lox-field label,
+#kia2lox-force-times .kia2lox-field label {
+	font-size: 11.5px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+#kia2lox-custom-times { margin-bottom: 10px; }
+.kia2lox-time-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 6px;
+}
+.kia2lox-time-remove {
+	appearance: none !important;
+	border: 1px solid var(--border) !important;
+	background: var(--surface) !important;
+	color: var(--text-muted) !important;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	flex: none;
+	border-radius: 6px !important;
+	font-size: 15px;
+	line-height: 1;
+	padding: 0 !important;
+	margin: 0 !important;
+	box-shadow: none !important;
+	cursor: pointer;
+}
+.kia2lox-time-remove:hover { color: var(--danger); border-color: var(--danger-border) !important; }
+.kia2lox-time-remove:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.kia2lox-save-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 16px;
+}
+.kia2lox-save-feedback {
+	font-size: 13px;
+	font-weight: 600;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+.kia2lox-save-feedback.show { opacity: 1; }
+.kia2lox-save-feedback.kia2lox-save-ok { color: var(--success); }
+.kia2lox-save-feedback.kia2lox-save-error { color: var(--danger); }
+
+table.kia2lox-schedule {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13.5px;
+	margin-top: 18px;
+}
+table.kia2lox-schedule th {
+	text-align: left;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	padding: 0 10px 8px 0;
+	border-bottom: 1px solid var(--border);
+}
+table.kia2lox-schedule td {
+	padding: 9px 10px 9px 0;
+	border-bottom: 1px solid var(--border);
+	vertical-align: middle;
+}
+table.kia2lox-schedule tr:last-child td { border-bottom: none; }
+.kia2lox-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-family: Consolas, monospace;
+	font-size: 12px;
+	font-weight: 500;
+	padding: 3px 9px;
+	margin: 2px 4px 2px 0;
+	border-radius: 20px;
+}
+/* Erfolgreich abgefragt. */
+.kia2lox-pill-ok {
+	background: var(--success-bg);
+	color: var(--success);
+}
+/* Abfrage ist fehlgeschlagen. */
+.kia2lox-pill-error {
+	background: var(--danger-bg);
+	color: var(--danger);
+}
+/* Noch keine Abfrage (zukuenftig oder verpasst). */
+.kia2lox-pill-none {
+	background: var(--surface-alt);
+	color: var(--text-muted);
+}
+
+.kia2lox-url-label {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--text-muted);
+	margin: 0 0 6px;
+}
+.kia2lox-url-block + .kia2lox-url-block { margin-top: 14px; }
+.kia2lox-url-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: var(--surface-alt);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 9px 11px;
+}
+.kia2lox-url-row code {
+	font-family: Consolas, monospace;
+	font-size: 13px;
+	color: var(--text);
+	overflow-x: auto;
+	white-space: nowrap;
+	flex: 1;
+}
+.kia2lox-copy-btn {
+	appearance: none !important;
+	border: 1px solid var(--border) !important;
+	background: var(--surface) !important;
+	color: var(--text) !important;
+	font-family: inherit;
+	font-size: 12.5px;
+	font-weight: 600;
+	border-radius: 6px !important;
+	padding: 6px 10px !important;
+	margin: 0 !important;
+	box-shadow: none !important;
+	cursor: pointer;
+	flex: none;
+}
+.kia2lox-copy-btn:hover { border-color: var(--accent) !important; }
+
+.kia2lox-template-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 14px;
+}
+.kia2lox-template-card {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	background: var(--surface-alt);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 16px;
+}
+.kia2lox-template-card h3 {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+}
+.kia2lox-template-card p {
+	margin: 0;
+	font-size: 12.5px;
+	color: var(--text-muted);
+	flex: 1;
+}
+.kia2lox-template-card .kia2lox-vehicle-pill-add {
+	align-self: flex-start;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+}
+
+.kia2lox-log-box {
+	margin: 0;
+	padding: 14px 16px;
+	background: var(--surface-alt);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	font-family: Consolas, monospace;
+	font-size: 12.5px;
+	line-height: 1.5;
+	color: var(--text);
+	white-space: pre-wrap;
+	word-break: break-word;
+	max-height: 65vh;
+	overflow-y: auto;
+}
+
+/* ---------- Uebersicht ---------- */
+
+.kia2lox-connect-notice {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 36px 32px;
+	text-align: center;
+	max-width: 480px;
+	margin: 40px auto;
+}
+.kia2lox-connect-notice-title {
+	margin: 0 0 8px;
+	font-size: 18px;
+	font-weight: 700;
+}
+.kia2lox-connect-notice-text {
+	margin: 0 0 18px;
+	font-size: 13.5px;
+	color: var(--text-muted);
+}
+.kia2lox-connect-notice .kia2lox-vehicle-pill-add { text-decoration: none !important; display: inline-block; }
+
+.kia2lox-stat-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 14px;
+	margin-bottom: 22px;
+}
+.kia2lox-stat-card {
+	background: var(--card-info-bg);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 16px 18px;
+}
+.kia2lox-stat-label {
+	font-size: 11.5px;
+	font-weight: 600;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	margin: 0 0 8px;
+}
+.kia2lox-stat-value {
+	font-size: 19px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	font-variant-numeric: tabular-nums;
+}
+.kia2lox-stat-value.mono { font-family: Consolas, monospace; }
+.kia2lox-stat-sub {
+	margin-top: 4px;
+	font-size: 12.5px;
+	color: var(--text-muted);
+}
+
+.kia2lox-badge-dot {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--success);
+	margin-right: 6px;
+	vertical-align: 1px;
+}
+.kia2lox-badge-dot-bad { background: var(--danger); }
+
+.kia2lox-stat-card.kia2lox-status-ok {
+	background: var(--success-bg);
+	border-color: var(--success-bg-strong);
+}
+.kia2lox-stat-card.kia2lox-status-bad {
+	background: var(--danger-bg);
+	border-color: var(--danger-border);
+}
+.kia2lox-stat-card.kia2lox-plug-in {
+	background: var(--success-bg);
+	border-color: var(--success-bg-strong);
+}
+.kia2lox-stat-card.kia2lox-plug-charging {
+	animation: kia2loxChargePulse 2s ease-in-out infinite;
+}
+@keyframes kia2loxChargePulse {
+	0%, 100% { background: var(--success-bg); border-color: var(--success-bg-strong); }
+	50% { background: var(--success-bg-strong); border-color: var(--success); }
+}
+@media (prefers-reduced-motion: reduce) {
+	.kia2lox-stat-card.kia2lox-plug-charging { animation: none; background: var(--success-bg-strong); }
+}
+
+.kia2lox-info-banner {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+	background: var(--warning-bg);
+	border: 1px solid var(--warning-border);
+	border-radius: 12px;
+	padding: 16px 18px;
+	margin-bottom: 18px;
+}
+.kia2lox-info-banner-title {
+	margin: 0 0 4px;
+	font-size: 14px;
+	font-weight: 700;
+}
+.kia2lox-info-banner-text {
+	margin: 0 0 12px;
+	font-size: 13px;
+	color: var(--text-muted);
+	max-width: 70ch;
+}
+.kia2lox-info-banner-actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+.kia2lox-btn-banner-ok, .kia2lox-btn-banner-mute {
+	appearance: none !important;
+	font-family: inherit;
+	font-size: 12.5px;
+	font-weight: 600;
+	border-radius: 7px !important;
+	padding: 7px 14px !important;
+	margin: 0 !important;
+	box-shadow: none !important;
+	cursor: pointer;
+}
+.kia2lox-btn-banner-ok {
+	border: none !important;
+	background: var(--accent-strong) !important;
+	color: #FFFFFF !important;
+}
+.kia2lox-btn-banner-ok:hover { background: var(--accent) !important; }
+.kia2lox-btn-banner-mute {
+	border: 1px solid var(--warning-border) !important;
+	background: transparent !important;
+	color: var(--text-muted) !important;
+}
+.kia2lox-btn-banner-mute:hover { color: var(--text) !important; }
+
+.kia2lox-chart-controls {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin-top: 14px;
+	margin-bottom: 16px;
+}
+.kia2lox-chart-range-group {
+	display: inline-flex;
+	background: var(--surface-alt);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 2px;
+	gap: 2px;
+}
+.kia2lox-chart-range-btn {
+	appearance: none !important;
+	border: none !important;
+	background: transparent !important;
+	color: var(--text-muted) !important;
+	font-family: inherit;
+	font-size: 12.5px;
+	font-weight: 600;
+	padding: 6px 12px !important;
+	margin: 0 !important;
+	border-radius: 6px !important;
+	box-shadow: none !important;
+	cursor: pointer;
+}
+.kia2lox-chart-range-btn:hover { color: var(--text) !important; }
+.kia2lox-chart-range-btn.active {
+	background: var(--accent-strong) !important;
+	color: #FFFFFF !important;
+}
+.kia2lox-chart-range-label {
+	margin-left: auto;
+	font-family: Consolas, monospace;
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.kia2lox-chart-wrap { position: relative; overflow-x: auto; }
+.kia2lox-chart-wrap svg { width: 100%; height: auto; min-width: 480px; display: block; }
+.kia2lox-chart-grid { stroke: var(--border); stroke-width: 1; }
+.kia2lox-chart-grid-base { stroke: var(--text-muted); }
+.kia2lox-chart-axis-label { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 10.5px; fill: var(--text-muted); }
+.kia2lox-chart-area { fill: var(--accent); fill-opacity: 0.14; stroke: none; }
+.kia2lox-chart-line { fill: none; stroke: var(--accent-strong); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+/* Datenpunkte: Farbe zeigt Stecker-/Ladestatus zu diesem Zeitpunkt. */
+.kia2lox-chart-point-unplugged { fill: var(--accent-strong); }
+.kia2lox-chart-point-plugged { fill: var(--info); }
+.kia2lox-chart-point-charging { fill: var(--success); }
+.kia2lox-chart-hover-line { stroke: var(--text-muted); stroke-width: 1; pointer-events: none; }
+.kia2lox-chart-hover-point { fill: var(--accent-strong); stroke: var(--surface); stroke-width: 2; pointer-events: none; }
+.kia2lox-chart-hit { fill: transparent; cursor: crosshair; }
+.kia2lox-chart-tooltip {
+	position: absolute;
+	pointer-events: none;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 8px 11px;
+	font-size: 12.5px;
+	line-height: 1.5;
+	box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+	white-space: nowrap;
+	z-index: 5;
+	color: var(--text);
+}
+.kia2lox-chart-tooltip strong { font-weight: 600; }
+.kia2lox-tt-value { font-family: Consolas, monospace; color: var(--accent-strong); }
+
+/* ---------- Hilfe ---------- */
+
+.kia2lox-desc a,
+.kia2lox-desc a:link,
+.kia2lox-desc a:visited {
+	color: var(--accent-strong) !important;
+}
+.kia2lox-desc code {
+	font-family: Consolas, monospace;
+	background: var(--surface-alt);
+	border-radius: 4px;
+	padding: 1px 5px;
+	font-size: 12.5px;
+}
+
+.kia2lox-about-meta {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	flex-wrap: wrap;
+	margin-top: 16px;
+	padding-top: 14px;
+	border-top: 1px solid var(--border);
+}
+.kia2lox-version-chip {
+	font-family: Consolas, monospace;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-muted);
+	background: var(--surface-alt);
+	border: 1px solid var(--border);
+	border-radius: 20px;
+	padding: 4px 12px;
+	white-space: nowrap;
+}
+.kia2lox-help-link {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--accent-strong);
+	text-decoration: none;
+}
+.kia2lox-help-link:hover { text-decoration: underline; }
+
+.kia2lox-help-list {
+	margin: 0 0 12px;
+	padding-left: 22px;
+	font-size: 13.5px;
+	line-height: 1.6;
+	color: var(--text);
+}
+.kia2lox-help-list li { margin-bottom: 8px; }
+.kia2lox-help-list li:last-child { margin-bottom: 0; }
+.kia2lox-help-list code {
+	font-family: Consolas, monospace;
+	background: var(--surface-alt);
+	border-radius: 4px;
+	padding: 1px 5px;
+	font-size: 12.5px;
+}
+
+.kia2lox-help-table-wrap { overflow-x: auto; margin-bottom: 12px; }
+table.kia2lox-help-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13.5px;
+}
+table.kia2lox-help-table th {
+	text-align: left;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	padding: 0 10px 8px 0;
+	border-bottom: 1px solid var(--border);
+}
+table.kia2lox-help-table td {
+	padding: 9px 10px 9px 0;
+	border-bottom: 1px solid var(--border);
+	vertical-align: top;
+}
+table.kia2lox-help-table tr:last-child td { border-bottom: none; }
+table.kia2lox-help-table code {
+	font-family: Consolas, monospace;
+	background: var(--surface-alt);
+	border-radius: 4px;
+	padding: 1px 5px;
+	font-size: 12.5px;
+	white-space: nowrap;
 }
