@@ -35,12 +35,12 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 
 	if ($action === "add_vehicle") {
 		if (count($vehicles) >= KIA2LOX_MAX_VEHICLES) {
-			$message = "Maximal " . KIA2LOX_MAX_VEHICLES . " Fahrzeuge moeglich.";
+			$message = kia2lox_t("SETTINGS.MAX_VEHICLES_ERROR", ["max" => KIA2LOX_MAX_VEHICLES]);
 			$message_type = "error";
 		} else {
 			$name = trim($_POST["new_vehicle_name"] ?? "");
 			if ($name === "") {
-				$name = "Fahrzeug " . (count($vehicles) + 1);
+				$name = kia2lox_t("VEHICLES.DEFAULT_NAME", ["n" => count($vehicles) + 1]);
 			}
 			$id = kia2lox_new_vehicle_id($vehicles);
 			$vehicles[] = kia2lox_default_vehicle($name, $id);
@@ -66,7 +66,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		$pin = trim($_POST["kia_pin"] ?? "");
 
 		if ($name === "" || $username === "" || $password === "") {
-			kia2lox_json_response(["ok" => false, "message" => "Fahrzeugname, Benutzername und Passwort sind erforderlich."]);
+			kia2lox_json_response(["ok" => false, "message" => kia2lox_t("SETTINGS.CRED_REQUIRED")]);
 		}
 
 		// Fahrzeugname unabhaengig vom Login-Ergebnis speichern, damit
@@ -83,10 +83,21 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		if (!$test["ok"]) {
 			kia2lox_json_response([
 				"ok" => false,
-				"message" => "Login fehlgeschlagen: " . ($test["error"] ?? "Unbekannter Fehler") . " Der Fahrzeugname wurde trotzdem gespeichert.",
+				"message" => kia2lox_t("SETTINGS.LOGIN_FAILED", ["error" => $test["error"] ?? kia2lox_t("COMMON.UNKNOWN_ERROR")]),
 				"name" => $name,
 				"connected" => false,
 			]);
+		}
+
+		// War dieses Fahrzeug vorher noch nicht verbunden, ist das hier die
+		// allererste erfolgreiche Verbindung - dann gleich einen echten
+		// Force-Refresh anstossen, damit auf der Uebersicht sofort Daten
+		// zu sehen sind, statt bis zum naechsten Intervall zu warten.
+		$was_connected = false;
+		foreach ($vehicles as $v) {
+			if ($v["id"] === $id) {
+				$was_connected = !empty($v["kia_connected"]);
+			}
 		}
 
 		foreach ($vehicles as &$v) {
@@ -99,9 +110,14 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		}
 		unset($v);
 		kia2lox_save_vehicles($vehicles);
+
+		if (!$was_connected) {
+			kia2lox_manual_refresh($id, true);
+		}
+
 		kia2lox_json_response([
 			"ok" => true,
-			"message" => "Zugangsdaten gespeichert, Login wurde erfolgreich getestet.",
+			"message" => kia2lox_t("SETTINGS.CRED_SAVED"),
 			"name" => $name,
 			"connected" => true,
 		]);
@@ -112,10 +128,10 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		$ip = kia2lox_miniserver_ip($msnr);
 
 		if ($ip === "") {
-			kia2lox_json_response(["ok" => false, "message" => "Bitte einen Miniserver auswählen."]);
+			kia2lox_json_response(["ok" => false, "message" => kia2lox_t("SETTINGS.MS_SELECT_REQUIRED")]);
 		}
 		if ($port < 1 || $port > 65535) {
-			kia2lox_json_response(["ok" => false, "message" => "UDP-Port muss zwischen 1 und 65535 liegen."]);
+			kia2lox_json_response(["ok" => false, "message" => kia2lox_t("SETTINGS.MS_PORT_RANGE")]);
 		}
 		foreach ($vehicles as &$v) {
 			if ($v["id"] === $id) {
@@ -126,7 +142,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		}
 		unset($v);
 		kia2lox_save_vehicles($vehicles);
-		kia2lox_json_response(["ok" => true, "message" => "Miniserver-Einstellungen gespeichert."]);
+		kia2lox_json_response(["ok" => true, "message" => kia2lox_t("SETTINGS.MS_SAVED")]);
 	} elseif ($action === "save_interval") {
 		$id = $_POST["vehicle_id"] ?? "";
 		$time_re = '/^([01]\d|2[0-3]):[0-5]\d$/';
@@ -186,15 +202,15 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		}
 		unset($v);
 		kia2lox_save_vehicles($vehicles);
-		kia2lox_json_response(["ok" => true, "message" => "Intervall-Einstellungen gespeichert."]);
+		kia2lox_json_response(["ok" => true, "message" => kia2lox_t("SETTINGS.INTERVAL_SAVED")]);
 	} elseif ($action === "manual_refresh") {
 		$id = $_POST["vehicle_id"] ?? "";
 		$result = kia2lox_manual_refresh($id);
 		if ($result["ok"]) {
-			$message = "Aktualisierung ausgel&ouml;st und abgeschlossen.";
+			$message = kia2lox_t("SETTINGS.REFRESH_DONE");
 			$message_type = "ok";
 		} else {
-			$message = "Aktualisierung fehlgeschlagen: " . ($result["error"] ?? "Unbekannter Fehler");
+			$message = kia2lox_t("SETTINGS.REFRESH_FAILED", ["error" => $result["error"] ?? kia2lox_t("COMMON.UNKNOWN_ERROR")]);
 			$message_type = "error";
 		}
 		$active_id = $id;
@@ -204,7 +220,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 // Es sollte immer mindestens ein Fahrzeug existieren (wird eigentlich
 // schon bei der Installation angelegt) - hier zur Sicherheit nochmal.
 if (empty($vehicles)) {
-	$vehicles = [kia2lox_default_vehicle("Fahrzeug 1", "v1")];
+	$vehicles = [kia2lox_default_vehicle(kia2lox_t("VEHICLES.DEFAULT_NAME", ["n" => 1]), "v1")];
 	kia2lox_save_vehicles($vehicles);
 }
 
@@ -233,11 +249,11 @@ $connected = !empty($active["kia_connected"]);
 
 if (isset($_GET["saved"]) && $message === null) {
 	if ($_GET["saved"] === "ms") {
-		$message = "Miniserver-Einstellungen gespeichert.";
+		$message = kia2lox_t("SETTINGS.MS_SAVED");
 	} elseif ($_GET["saved"] === "interval") {
-		$message = "Intervall-Einstellungen gespeichert.";
+		$message = kia2lox_t("SETTINGS.INTERVAL_SAVED");
 	} else {
-		$message = "Zugangsdaten gespeichert, Login wurde erfolgreich getestet.";
+		$message = kia2lox_t("SETTINGS.CRED_SAVED");
 	}
 	$message_type = "ok";
 }
@@ -269,49 +285,49 @@ require "inc_header.php";
 
 	<div class="kia2lox-card<?php echo !empty($active["kia_connected"]) ? " kia2lox-card-connected" : ""; ?>" id="kia2lox-cred-card"
 	     data-connected="<?php echo !empty($active["kia_connected"]) ? "1" : "0"; ?>">
-		<h2>Kia Connect Zugangsdaten</h2>
-		<p class="kia2lox-desc">Dieselben Zugangsdaten wie in der Kia-Connect-App.</p>
+		<h2><?php echo htmlspecialchars(kia2lox_t("SETTINGS.CRED_TITLE")); ?></h2>
+		<p class="kia2lox-desc"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.CRED_DESC")); ?></p>
 		<form method="post" action="index.php" autocomplete="off" id="kia2lox-cred-form">
 			<input type="hidden" name="kia2lox_action" value="save_credentials">
 			<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($active_id); ?>">
 
 			<div class="kia2lox-field-grid">
 				<div class="kia2lox-field">
-					<label for="vehicle_name">Fahrzeugname</label>
+					<label for="vehicle_name"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_VEHICLE_NAME")); ?></label>
 					<input type="text" id="vehicle_name" name="vehicle_name" autocomplete="off" data-role="none"
 					       value="<?php echo htmlspecialchars($active["name"]); ?>" required>
 				</div>
 				<div class="kia2lox-field">
-					<label for="kia_username">Benutzername (E-Mail)</label>
+					<label for="kia_username"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_USERNAME")); ?></label>
 					<input type="email" id="kia_username" name="kia_username" autocomplete="off" data-role="none"
 					       pattern="[^\s@&lt;&gt;]+@[^\s@&lt;&gt;]+\.[A-Za-z]{2,}"
 					       value="<?php echo htmlspecialchars($active["kia_username"]); ?>" required>
 				</div>
 				<div class="kia2lox-field">
-					<label for="kia_password">Passwort</label>
+					<label for="kia_password"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_PASSWORD")); ?></label>
 					<input type="password" id="kia_password" name="kia_password" autocomplete="new-password" data-role="none"
 					       value="<?php echo htmlspecialchars($active["kia_password"]); ?>" required>
 				</div>
 				<div class="kia2lox-field">
-					<label for="kia_pin">PIN</label>
+					<label for="kia_pin"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_PIN")); ?></label>
 					<input type="password" id="kia_pin" name="kia_pin" autocomplete="new-password" data-role="none"
 					       value="<?php echo htmlspecialchars($active["kia_pin"]); ?>">
-					<p class="kia2lox-hint">Nur n&ouml;tig, falls dein Account eine PIN verlangt.</p>
+					<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.PIN_HINT")); ?></p>
 				</div>
 			</div>
 
 			<div class="kia2lox-save-row">
-				<button type="submit" class="kia2lox-btn" id="kia2lox-save-cred" disabled>Zugangsdaten speichern</button>
+				<button type="submit" class="kia2lox-btn" id="kia2lox-save-cred" disabled><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SAVE_CRED_BUTTON")); ?></button>
 				<span class="kia2lox-save-feedback" id="kia2lox-save-feedback-cred"></span>
 			</div>
 		</form>
 	</div>
 
 	<div class="kia2lox-card">
-		<h2>Loxone Miniserver</h2>
-		<p class="kia2lox-desc">Ziel f&uuml;r die UDP-Telegramme mit Ladezustand, Reichweite, Lade- und Steckerstatus.</p>
+		<h2><?php echo htmlspecialchars(kia2lox_t("SETTINGS.MS_TITLE")); ?></h2>
+		<p class="kia2lox-desc"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.MS_DESC")); ?></p>
 		<?php if (empty($ms_options)): ?>
-			<p class="kia2lox-hint">Kein Miniserver in der LoxBerry-Konfiguration gefunden. Bitte zuerst unter System-Einstellungen &rarr; Miniserver einen Miniserver anlegen.</p>
+			<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.MS_NONE_HINT")); ?></p>
 		<?php else: ?>
 			<form method="post" action="index.php" id="kia2lox-ms-form">
 				<input type="hidden" name="kia2lox_action" value="save_miniserver">
@@ -319,7 +335,7 @@ require "inc_header.php";
 
 				<div class="kia2lox-field-grid">
 					<div class="kia2lox-field">
-						<label for="ms_number">Miniserver</label>
+						<label for="ms_number"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_MS")); ?></label>
 						<select id="ms_number" name="ms_number" data-role="none" required>
 							<?php
 							$ms_selected = (string)$active["ms_number"];
@@ -336,14 +352,14 @@ require "inc_header.php";
 						</select>
 					</div>
 					<div class="kia2lox-field">
-						<label for="udp_target_port">UDP-Port</label>
+						<label for="udp_target_port"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_UDP_PORT")); ?></label>
 						<input type="number" id="udp_target_port" name="udp_target_port" min="1" max="65535" data-role="none"
 						       value="<?php echo htmlspecialchars($active["udp_target_port"]); ?>" required>
 					</div>
 				</div>
 
 				<div class="kia2lox-save-row">
-					<button type="submit" class="kia2lox-btn" id="kia2lox-save-ms" disabled>Miniserver speichern</button>
+					<button type="submit" class="kia2lox-btn" id="kia2lox-save-ms" disabled><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SAVE_MS_BUTTON")); ?></button>
 					<span class="kia2lox-save-feedback" id="kia2lox-save-feedback-ms"></span>
 				</div>
 			</form>
@@ -353,20 +369,20 @@ require "inc_header.php";
 	<div class="kia2lox-card">
 		<div class="kia2lox-card-head">
 			<div>
-				<h2>Abfrage-Intervall</h2>
-				<p class="kia2lox-desc">Wie oft die zuletzt vom Fahrzeug gemeldeten Werte passiv abgerufen werden.</p>
+				<h2><?php echo htmlspecialchars(kia2lox_t("SETTINGS.INTERVAL_TITLE")); ?></h2>
+				<p class="kia2lox-desc"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.INTERVAL_DESC")); ?></p>
 			</div>
 			<?php if ($connected): ?>
 				<form method="post" action="index.php">
 					<input type="hidden" name="kia2lox_action" value="manual_refresh">
 					<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($active_id); ?>">
-					<button type="submit" class="kia2lox-vehicle-pill-add">Jetzt aktualisieren (Force-Refresh)</button>
+					<button type="submit" class="kia2lox-vehicle-pill-add"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.FORCE_REFRESH_BUTTON")); ?></button>
 				</form>
 			<?php endif; ?>
 		</div>
 
 		<?php if (!$connected): ?>
-			<p class="kia2lox-hint">Bitte zuerst g&uuml;ltige Kia-Connect-Zugangsdaten speichern, bevor das Abfrage-Intervall eingestellt werden kann.</p>
+			<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.INTERVAL_LOCKED_HINT")); ?></p>
 		<?php else: ?>
 
 		<?php
@@ -393,15 +409,15 @@ require "inc_header.php";
 			<div class="kia2lox-interval-grid">
 				<div class="kia2lox-field-block">
 					<div class="kia2lox-field">
-						<label for="passive_mode">Passives Intervall</label>
+						<label for="passive_mode"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_PASSIVE_MODE")); ?></label>
 						<select id="passive_mode" name="passive_mode" data-role="none">
 							<?php foreach (KIA2LOX_INTERVAL_OPTIONS as $opt): ?>
 								<option value="<?php echo $opt; ?>" <?php echo ($passive_mode === "interval" && $passive_interval === $opt) ? "selected" : ""; ?>>
-									<?php echo $opt; ?> Minuten
+									<?php echo htmlspecialchars(kia2lox_t("SETTINGS.OPTION_MINUTES", ["n" => $opt])); ?>
 								</option>
 							<?php endforeach; ?>
-							<option value="never" <?php echo $passive_mode === "never" ? "selected" : ""; ?>>Nie (nur manuell)</option>
-							<option value="custom" <?php echo $passive_mode === "custom" ? "selected" : ""; ?>>Individuell</option>
+							<option value="never" <?php echo $passive_mode === "never" ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.OPTION_NEVER")); ?></option>
+							<option value="custom" <?php echo $passive_mode === "custom" ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.OPTION_CUSTOM")); ?></option>
 						</select>
 					</div>
 
@@ -409,16 +425,16 @@ require "inc_header.php";
 						<label class="kia2lox-checkbox">
 							<input type="checkbox" id="passive_window_enabled" name="passive_window_enabled" value="1" data-role="none"
 							       <?php echo $window_enabled ? "checked" : ""; ?>>
-							Im Zeitraum
+							<?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_WINDOW_ENABLED")); ?>
 						</label>
 						<div class="kia2lox-times-row" id="kia2lox-window-fields">
 							<div class="kia2lox-field">
-								<label for="passive_window_from">Von</label>
+								<label for="passive_window_from"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_FROM")); ?></label>
 								<input type="time" id="passive_window_from" name="passive_window_from" data-role="none"
 								       value="<?php echo htmlspecialchars($window_from); ?>">
 							</div>
 							<div class="kia2lox-field">
-								<label for="passive_window_to">Bis</label>
+								<label for="passive_window_to"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_TO")); ?></label>
 								<input type="time" id="passive_window_to" name="passive_window_to" data-role="none"
 								       value="<?php echo htmlspecialchars($window_to); ?>">
 							</div>
@@ -426,40 +442,39 @@ require "inc_header.php";
 					</div>
 
 					<div id="kia2lox-custom-times-wrap">
-						<p class="kia2lox-times-label">Uhrzeiten (individuell, bis zu <?php echo KIA2LOX_MAX_CUSTOM_TIMES; ?>)</p>
+						<p class="kia2lox-times-label"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.CUSTOM_TIMES_LABEL", ["max" => KIA2LOX_MAX_CUSTOM_TIMES])); ?></p>
 						<div id="kia2lox-custom-times">
 							<?php foreach ($passive_custom_times as $i => $t): ?>
 								<div class="kia2lox-time-row">
 									<div class="kia2lox-field">
-										<label>Zeitpunkt <?php echo $i + 1; ?></label>
+										<label><?php echo htmlspecialchars(kia2lox_t("SETTINGS.TIMEPOINT", ["n" => $i + 1])); ?></label>
 										<input type="time" name="passive_custom_times[]" data-role="none"
 										       value="<?php echo htmlspecialchars($t); ?>">
 									</div>
-									<button type="button" class="kia2lox-time-remove" aria-label="Uhrzeit entfernen">&times;</button>
+									<button type="button" class="kia2lox-time-remove" aria-label="<?php echo htmlspecialchars(kia2lox_t("SETTINGS.REMOVE_TIME_ARIA")); ?>">&times;</button>
 								</div>
 							<?php endforeach; ?>
 						</div>
-						<button type="button" id="kia2lox-add-time" class="kia2lox-vehicle-pill-add" style="margin-top:10px;">+ Uhrzeit</button>
+						<button type="button" id="kia2lox-add-time" class="kia2lox-vehicle-pill-add" style="margin-top:10px;"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.ADD_TIME_BUTTON")); ?></button>
 					</div>
 				</div>
 
 				<div class="kia2lox-field-block">
 					<div class="kia2lox-field">
-						<label for="force_freq">Force-Refresh (weckt das Fahrzeug)</label>
+						<label for="force_freq"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_FORCE_FREQ")); ?></label>
 						<select id="force_freq" name="force_freq" data-role="none">
-							<option value="0" <?php echo $force_freq === 0 ? "selected" : ""; ?>>Nie</option>
-							<option value="1" <?php echo $force_freq === 1 ? "selected" : ""; ?>>1&times; t&auml;glich</option>
-							<option value="2" <?php echo $force_freq === 2 ? "selected" : ""; ?>>2&times; t&auml;glich</option>
-							<option value="3" <?php echo $force_freq === 3 ? "selected" : ""; ?>>3&times; t&auml;glich</option>
-							<option value="4" <?php echo $force_freq === 4 ? "selected" : ""; ?>>4&times; t&auml;glich</option>
+							<option value="0" <?php echo $force_freq === 0 ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.OPTION_FORCE_NEVER")); ?></option>
+							<?php for ($i = 1; $i <= 4; $i++): ?>
+								<option value="<?php echo $i; ?>" <?php echo $force_freq === $i ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.OPTION_FORCE_TIMES", ["n" => $i])); ?></option>
+							<?php endfor; ?>
 						</select>
 					</div>
 					<div id="kia2lox-force-times-wrap" <?php echo $force_freq === 0 ? 'style="display:none"' : ""; ?>>
-						<p class="kia2lox-times-label">Uhrzeiten f&uuml;r Force-Refresh</p>
+						<p class="kia2lox-times-label"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.FORCE_TIMES_LABEL")); ?></p>
 						<div id="kia2lox-force-times">
 							<?php foreach ($force_times as $i => $t): ?>
 								<div class="kia2lox-field">
-									<label>Zeitpunkt <?php echo $i + 1; ?></label>
+									<label><?php echo htmlspecialchars(kia2lox_t("SETTINGS.TIMEPOINT", ["n" => $i + 1])); ?></label>
 									<input type="time" name="force_times[]" data-role="none"
 									       value="<?php echo htmlspecialchars($t); ?>">
 								</div>
@@ -470,21 +485,21 @@ require "inc_header.php";
 			</div>
 
 			<div class="kia2lox-save-row">
-				<button type="submit" class="kia2lox-btn" id="kia2lox-save-interval" disabled>Intervalle speichern</button>
+				<button type="submit" class="kia2lox-btn" id="kia2lox-save-interval" disabled><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SAVE_INTERVAL_BUTTON")); ?></button>
 				<span class="kia2lox-save-feedback" id="kia2lox-save-feedback-interval"></span>
 			</div>
 
 			<table class="kia2lox-schedule">
 				<thead>
-					<tr><th>Heute geplant</th><th></th></tr>
+					<tr><th><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SCHEDULE_TITLE")); ?></th><th></th></tr>
 				</thead>
 				<tbody>
 					<tr id="kia2lox-passive-schedule-row">
-						<td>Passive Abfrage</td>
+						<td><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SCHEDULE_PASSIVE")); ?></td>
 						<td id="kia2lox-passive-schedule-pills"></td>
 					</tr>
 					<tr id="kia2lox-force-schedule-row">
-						<td>Force-Refresh</td>
+						<td><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SCHEDULE_FORCE")); ?></td>
 						<td id="kia2lox-force-schedule-pills"></td>
 					</tr>
 				</tbody>
@@ -500,47 +515,47 @@ require "inc_header.php";
 	$refresh_url = "http://{$http_host}/plugins/kia2lox/refresh.php?key=" . urlencode($http_key);
 	?>
 	<div class="kia2lox-card">
-		<h2>HTTP-Befehle f&uuml;r Loxone</h2>
-		<p class="kia2lox-desc">Diese Adressen als HTTP-Befehl in virtuellen Ausg&auml;ngen in Loxone Config hinterlegen. Kein LoxBerry-Login n&ouml;tig, daf&uuml;r ein eigener Schl&uuml;ssel pro Fahrzeug - nicht weitergeben.</p>
+		<h2><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HTTP_TITLE")); ?></h2>
+		<p class="kia2lox-desc"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HTTP_DESC")); ?></p>
 
 		<?php if (!$connected): ?>
-			<p class="kia2lox-hint">Bitte zuerst g&uuml;ltige Kia-Connect-Zugangsdaten speichern, bevor die HTTP-Befehle f&uuml;r dieses Fahrzeug genutzt werden k&ouml;nnen.</p>
+			<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HTTP_LOCKED_HINT")); ?></p>
 		<?php else: ?>
 
 		<div class="kia2lox-url-block">
-			<p class="kia2lox-url-label">Passive Abfrage jetzt ausl&ouml;sen</p>
+			<p class="kia2lox-url-label"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.POLL_LABEL")); ?></p>
 			<div class="kia2lox-url-row">
 				<code id="kia2lox-poll-url"><?php echo htmlspecialchars($poll_url); ?></code>
-				<button type="button" class="kia2lox-copy-btn" data-copy-target="kia2lox-poll-url">Kopieren</button>
+				<button type="button" class="kia2lox-copy-btn" data-copy-target="kia2lox-poll-url"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.COPY_BUTTON")); ?></button>
 			</div>
 		</div>
 
 		<div class="kia2lox-url-block">
-			<p class="kia2lox-url-label">Force-Refresh jetzt ausl&ouml;sen (weckt das Fahrzeug)</p>
+			<p class="kia2lox-url-label"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.REFRESH_LABEL")); ?></p>
 			<div class="kia2lox-url-row">
 				<code id="kia2lox-refresh-url"><?php echo htmlspecialchars($refresh_url); ?></code>
-				<button type="button" class="kia2lox-copy-btn" data-copy-target="kia2lox-refresh-url">Kopieren</button>
+				<button type="button" class="kia2lox-copy-btn" data-copy-target="kia2lox-refresh-url"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.COPY_BUTTON")); ?></button>
 			</div>
 		</div>
 		<?php endif; ?>
 	</div>
 
 	<div class="kia2lox-card">
-		<h2>Loxone Vorlagen</h2>
-		<p class="kia2lox-desc">Fertig ausgef&uuml;llte Vorlagen zum Import in Loxone Config &ndash; Adresse, Port und Befehle sind bereits eingetragen.</p>
+		<h2><?php echo htmlspecialchars(kia2lox_t("SETTINGS.TEMPLATES_TITLE")); ?></h2>
+		<p class="kia2lox-desc"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.TEMPLATES_DESC")); ?></p>
 		<?php if (!$connected): ?>
-			<p class="kia2lox-hint">Bitte zuerst g&uuml;ltige Kia-Connect-Zugangsdaten speichern, bevor die Vorlagen f&uuml;r dieses Fahrzeug heruntergeladen werden k&ouml;nnen.</p>
+			<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.TEMPLATES_LOCKED_HINT")); ?></p>
 		<?php else: ?>
 		<div class="kia2lox-template-grid">
 			<div class="kia2lox-template-card">
-				<h3>Virtueller UDP-Eingang</h3>
-				<p>Empf&auml;ngt Ladezustand, Reichweite, Lade- und Steckerstatus vom Kia2Lox-Plugin.</p>
-				<a class="kia2lox-vehicle-pill-add" href="template_input.php?vehicle=<?php echo urlencode($active_id); ?>">&#8595;&nbsp;Herunterladen</a>
+				<h3><?php echo htmlspecialchars(kia2lox_t("SETTINGS.INPUT_TEMPLATE_TITLE")); ?></h3>
+				<p><?php echo htmlspecialchars(kia2lox_t("SETTINGS.INPUT_TEMPLATE_DESC")); ?></p>
+				<a class="kia2lox-vehicle-pill-add" href="template_input.php?vehicle=<?php echo urlencode($active_id); ?>">&#8595;&nbsp;<?php echo htmlspecialchars(kia2lox_t("SETTINGS.DOWNLOAD_BUTTON")); ?></a>
 			</div>
 			<div class="kia2lox-template-card">
-				<h3>Virtueller Ausgang</h3>
-				<p>L&ouml;st passive Abfrage und Force-Refresh direkt aus Loxone aus.</p>
-				<a class="kia2lox-vehicle-pill-add" href="template_output.php?vehicle=<?php echo urlencode($active_id); ?>">&#8595;&nbsp;Herunterladen</a>
+				<h3><?php echo htmlspecialchars(kia2lox_t("SETTINGS.OUTPUT_TEMPLATE_TITLE")); ?></h3>
+				<p><?php echo htmlspecialchars(kia2lox_t("SETTINGS.OUTPUT_TEMPLATE_DESC")); ?></p>
+				<a class="kia2lox-vehicle-pill-add" href="template_output.php?vehicle=<?php echo urlencode($active_id); ?>">&#8595;&nbsp;<?php echo htmlspecialchars(kia2lox_t("SETTINGS.DOWNLOAD_BUTTON")); ?></a>
 			</div>
 		</div>
 		<?php endif; ?>
@@ -549,6 +564,15 @@ require "inc_header.php";
 </div>
 </div>
 <script>
+	var KIA2LOX_L = <?php echo json_encode([
+		"timepoint" => kia2lox_t("SETTINGS.TIMEPOINT"),
+		"remove_time" => kia2lox_t("SETTINGS.REMOVE_TIME_ARIA"),
+		"save_error_default" => kia2lox_t("SETTINGS.SAVE_ERROR_DEFAULT"),
+		"save_ok_default" => kia2lox_t("SETTINGS.SAVE_OK_DEFAULT"),
+		"save_error_connection" => kia2lox_t("SETTINGS.SAVE_ERROR_CONNECTION"),
+		"copied" => kia2lox_t("SETTINGS.COPIED_BUTTON"),
+	]); ?>;
+
 	// Speichern-Buttons: grau/inaktiv, bis sich etwas in der jeweiligen
 	// Karte tatsaechlich geaendert hat (und die Pflichtfelder gueltig sind).
 	// resetBaseline() wird nach einem erfolgreichen AJAX-Speichern
@@ -596,7 +620,7 @@ require "inc_header.php";
 				.then(function (resp) { return resp.json(); })
 				.then(function (data) {
 					if (feedback) {
-						feedback.textContent = (data.ok ? "✓ " : "") + (data.message || (data.ok ? "Gespeichert" : "Fehler beim Speichern."));
+						feedback.textContent = (data.ok ? "✓ " : "") + (data.message || (data.ok ? KIA2LOX_L.save_ok_default : KIA2LOX_L.save_error_default));
 						feedback.classList.remove("kia2lox-save-ok", "kia2lox-save-error");
 						feedback.classList.add(data.ok ? "kia2lox-save-ok" : "kia2lox-save-error", "show");
 						clearTimeout(feedback._kia2loxHideTimer);
@@ -609,7 +633,7 @@ require "inc_header.php";
 				})
 				.catch(function () {
 					if (feedback) {
-						feedback.textContent = "Fehler beim Speichern (Verbindung).";
+						feedback.textContent = KIA2LOX_L.save_error_connection;
 						feedback.classList.remove("kia2lox-save-ok");
 						feedback.classList.add("kia2lox-save-error", "show");
 					}
@@ -664,11 +688,18 @@ require "inc_header.php";
 	})();
 
 	kia2loxAjaxSave(document.getElementById("kia2lox-cred-form"), "kia2lox-save-feedback-cred", function (data) {
+		// Beim allerersten erfolgreichen Verbinden werden die zuvor
+		// gesperrten Karten (Intervall, HTTP-Befehle, Vorlagen) erst nach
+		// einem Neuladen server-seitig entsperrt angezeigt.
+		var wasConnectedBefore = document.getElementById("kia2lox-cred-card").dataset.connected === "1";
 		if (kia2loxSaveGroups.cred) { kia2loxSaveGroups.cred.resetBaseline(); }
 		if (data.connected) { kia2loxCredCardState.setConnected(true); }
 		if (data.name) {
 			var pill = document.querySelector(".kia2lox-vehicle-pill.active .kia2lox-vehicle-pill-label");
 			if (pill) { pill.textContent = data.name.trim(); }
+		}
+		if (data.connected && !wasConnectedBefore) {
+			window.location.reload();
 		}
 	});
 	kia2loxAjaxSave(document.getElementById("kia2lox-ms-form"), "kia2lox-save-feedback-ms", function () {
@@ -748,7 +779,7 @@ require "inc_header.php";
 		function renumberCustomTimes() {
 			var rows = customTimesList.querySelectorAll(".kia2lox-time-row");
 			rows.forEach(function (row, i) {
-				row.querySelector("label").textContent = "Zeitpunkt " + (i + 1);
+				row.querySelector("label").textContent = KIA2LOX_L.timepoint.replace("{n}", i + 1);
 				row.querySelector(".kia2lox-time-remove").disabled = rows.length <= 1;
 			});
 			addTimeBtn.style.display = rows.length >= MAX_CUSTOM_TIMES ? "none" : "";
@@ -762,7 +793,7 @@ require "inc_header.php";
 			var field = document.createElement("div");
 			field.className = "kia2lox-field";
 			var label = document.createElement("label");
-			label.textContent = "Zeitpunkt " + (customTimesList.children.length + 1);
+			label.textContent = KIA2LOX_L.timepoint.replace("{n}", customTimesList.children.length + 1);
 			var input = document.createElement("input");
 			input.type = "time";
 			input.name = "passive_custom_times[]";
@@ -775,7 +806,7 @@ require "inc_header.php";
 			var removeBtn = document.createElement("button");
 			removeBtn.type = "button";
 			removeBtn.className = "kia2lox-time-remove";
-			removeBtn.setAttribute("aria-label", "Uhrzeit entfernen");
+			removeBtn.setAttribute("aria-label", KIA2LOX_L.remove_time);
 			removeBtn.innerHTML = "&times;";
 			removeBtn.addEventListener("click", function () {
 				row.remove();
@@ -811,7 +842,7 @@ require "inc_header.php";
 				var field = document.createElement("div");
 				field.className = "kia2lox-field";
 				var label = document.createElement("label");
-				label.textContent = "Zeitpunkt " + (i + 1);
+				label.textContent = KIA2LOX_L.timepoint.replace("{n}", i + 1);
 				var input = document.createElement("input");
 				input.type = "time";
 				input.name = "force_times[]";
@@ -980,7 +1011,7 @@ require "inc_header.php";
 			try {
 				document.execCommand("copy");
 				var original = btn.textContent;
-				btn.textContent = "Kopiert!";
+				btn.textContent = KIA2LOX_L.copied;
 				setTimeout(function () { btn.textContent = original; }, 1500);
 			} catch (e) { /* Zwischenablage nicht verfuegbar - Adresse ist trotzdem sichtbar. */ }
 			document.body.removeChild(temp);
