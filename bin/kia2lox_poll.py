@@ -350,7 +350,6 @@ def main() -> None:
 
     now = datetime.datetime.now().astimezone()
     trigger = "manuell/HTTP-Trigger" if args.vehicle else "Cron"
-    print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Kia2Lox Abfrage startet ({trigger})")
 
     vehicles = config["vehicles"]
     if args.vehicle:
@@ -360,7 +359,6 @@ def main() -> None:
             sys.exit(1)
 
     if not vehicles:
-        print("Keine Fahrzeuge konfiguriert, nichts zu tun.")
         return
 
     # Ein explizit per --vehicle angestossener Aufruf (manueller
@@ -369,6 +367,26 @@ def main() -> None:
     # Fahrzeuge entscheidet jedes Fahrzeug anhand seiner eigenen
     # Passiv-/Force-Refresh-Einstellungen, ob und wie es abgefragt wird.
     explicit_vehicle = bool(args.vehicle)
+
+    # Der Cron-Puls laeuft alle 5 Minuten, aber laengst nicht jeder
+    # Durchlauf soll wirklich etwas tun. Ohne diesen Vorab-Check wuerde
+    # jeder Durchlauf trotzdem "Abfrage startet"/"Fertig." ins Log
+    # schreiben, auch wenn kein Fahrzeug faellig ist - daher hier still
+    # abbrechen, wenn es (noch) nichts zu tun gibt.
+    if not explicit_vehicle:
+        any_due = False
+        for vehicle_config in vehicles:
+            vehicle_id = vehicle_config.get("id")
+            if not vehicle_id or not vehicle_config.get("kia_connected"):
+                continue
+            vstate_preview = state.get(vehicle_id) or {}
+            if should_force_refresh_now(vehicle_config, now) or should_poll_passive_now(vehicle_config, vstate_preview, now):
+                any_due = True
+                break
+        if not any_due:
+            return
+
+    print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Kia2Lox Abfrage startet ({trigger})")
 
     for vehicle_config in vehicles:
         vehicle_id = vehicle_config.get("id")
