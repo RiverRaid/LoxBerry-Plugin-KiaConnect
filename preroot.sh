@@ -5,6 +5,6 @@
 #
 # Exit codes: 0 = success, 1 = warning, 2 = error (cancels installation)
 
-echo "<INFO> preroot.sh: keine root-Vorbereitung notwendig"
+echo "<INFO> preroot.sh: keine root-Vorbereitung notwendig (keine Systempakete oder Berechtigungen ausserhalb des Plugin-Verzeichnisses noetig)"
 
 exit 0

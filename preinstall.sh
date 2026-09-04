@@ -2,6 +2,9 @@
 
 # preinstall.sh - Executed before plugin files are copied to their destinations.
 # Runs as user "loxberry" AFTER preroot.sh and AFTER preupgrade.sh (on updates).
+# Nur zur Protokollierung genutzt - die eigentliche Einrichtung (Python-venv,
+# Standard-Konfiguration) passiert in postinstall.sh, nachdem die Dateien
+# schon an ihrem Zielort liegen.
 #
 # Exit codes: 0 = success, 1 = warning, 2 = error (cancels installation)
 

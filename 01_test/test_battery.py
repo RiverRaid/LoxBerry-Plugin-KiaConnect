@@ -1,6 +1,11 @@
 """
-Testscript: Ladezustand des Kia e-Niro ueber Kia Connect abfragen
-und die Werte per UDP an den Loxone Miniserver senden.
+Eigenstaendiges Testscript ausserhalb des LoxBerry-Plugins: Ladezustand
+eines einzelnen Kia-e-Autos ueber Kia Connect abfragen und die Werte per
+UDP an den Loxone Miniserver senden. Nuetzlich, um die Kia-Connect-
+Zugangsdaten und die eigene Netzwerkverbindung schnell zu pruefen, ohne
+das Plugin zu installieren. Das echte Plugin (bin/kia2lox_poll.py)
+unterstuetzt zusaetzlich mehrere Fahrzeuge, Abfrage-Intervalle und
+Batterie-Zustandswarnungen.
 
 Vor dem ersten Start:
 1. Datei "config.example.json" kopieren und in "config.json" umbenennen

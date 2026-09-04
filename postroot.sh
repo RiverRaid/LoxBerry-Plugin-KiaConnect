@@ -5,6 +5,6 @@
 #
 # Exit codes: 0 = success, 1 = warning, 2 = error (cancels installation)
 
-echo "<INFO> postroot.sh: keine root-Nacharbeit notwendig"
+echo "<INFO> postroot.sh: keine root-Nacharbeit notwendig (Python-venv und Cron-Jobs laufen als Benutzer loxberry, siehe postinstall.sh)"
 
 exit 0
