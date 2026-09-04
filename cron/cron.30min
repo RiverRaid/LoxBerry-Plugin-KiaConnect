@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# cron/cron.30min - wird von LoxBerry alle 30 Minuten aufgerufen.
+# Installiert nach $LBHOMEDIR/system/cron/cron.30min/kia2lox. Laeuft als
+# Benutzer "loxberry".
+#
+# Die eigentliche Abfrage passiert in bin/kia2lox_poll.py innerhalb der
+# eigenen Python-venv (angelegt von postinstall.sh).
+
+set -a
+source /etc/environment
+set +a
+
+PLUGIN_FOLDER="kia2lox"
+VENVPY="$LBPDATA/$PLUGIN_FOLDER/venv/bin/python3"
+SCRIPT="$LBPBIN/$PLUGIN_FOLDER/kia2lox_poll.py"
+LOGDIR="$LBPLOG/$PLUGIN_FOLDER"
+LOGFILE="$LOGDIR/poll.log"
+
+mkdir -p "$LOGDIR"
+
+if [ -x "$VENVPY" ]; then
+	"$VENVPY" "$SCRIPT" >> "$LOGFILE" 2>&1
+else
+	echo "$(date '+%F %T') FEHLER: Python-venv nicht gefunden: $VENVPY" >> "$LOGFILE"
+fi
