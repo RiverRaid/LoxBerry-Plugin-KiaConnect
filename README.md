@@ -42,7 +42,7 @@ In the LoxBerry web interface, go to **Configuration → Plugins → Add plugin*
 and enter this ZIP URL:
 
 ```
-https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.7.0.zip
+https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.7.4.zip
 ```
 
 Alternatively, download that ZIP manually and install it via the "Upload
