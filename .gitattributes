@@ -8,3 +8,6 @@
 *.py text eol=lf
 *.svg text eol=lf
 *.md text eol=lf
+
+*.png binary
+
