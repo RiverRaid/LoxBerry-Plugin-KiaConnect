@@ -106,6 +106,7 @@ LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plug
 ?>
 <link rel="stylesheet" href="assets/kia2lox.css">
 
+<div data-enhance="false">
 <div class="kia2lox-shell">
 	<div class="kia2lox-hero">
 		<div class="kia2lox-hero-inner">
@@ -202,6 +203,7 @@ LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plug
 		</form>
 	</div>
 
+</div>
 </div>
 <?php
 

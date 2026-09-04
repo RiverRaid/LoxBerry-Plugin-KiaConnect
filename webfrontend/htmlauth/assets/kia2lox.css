@@ -59,6 +59,22 @@
 
 body { background: var(--bg); }
 
+/* LoxBerry laedt jQuery Mobile, das Buttons/Links im Seiteninhalt sonst
+   automatisch zu vollbreiten "Enhanced"-Buttons mit eigenem Theme
+   (inkl. text-shadow) umbaut. data-enhance="false" auf dem Wrapper
+   verhindert das bereits; diese Regeln sind ein zusaetzliches
+   Sicherheitsnetz. */
+.kia2lox-shell, .kia2lox-shell *,
+.kia2lox-page, .kia2lox-page * {
+	text-shadow: none;
+	box-sizing: border-box;
+}
+.kia2lox-page button,
+.kia2lox-shell button {
+	width: auto;
+	display: inline-block;
+}
+
 .kia2lox-shell {
 	max-width: 1200px;
 	margin: 20px auto 0;
@@ -178,7 +194,14 @@ body { background: var(--bg); }
 	background: transparent;
 	color: var(--text-muted);
 	width: 26px;
+	min-width: 26px;
+	height: auto;
 	font-size: 13px;
+	line-height: 1;
+	padding: 0;
+	margin: 0;
+	border-radius: 0;
+	box-shadow: none;
 	cursor: pointer;
 }
 .kia2lox-vehicle-pill-remove:hover { color: var(--danger); }
@@ -189,8 +212,10 @@ body { background: var(--bg); }
 	color: var(--text-muted);
 	border-radius: 20px;
 	padding: 8px 14px;
+	margin: 0;
 	font-size: 13px;
 	font-weight: 600;
+	box-shadow: none;
 	cursor: pointer;
 }
 .kia2lox-vehicle-pill-add:hover { color: var(--text); border-color: var(--accent); }
@@ -267,6 +292,8 @@ body { background: var(--bg); }
 	font-weight: 600;
 	border-radius: 8px;
 	padding: 9px 18px;
+	margin: 0;
+	box-shadow: none;
 	cursor: pointer;
 	background: var(--success);
 	color: #FFFFFF;
