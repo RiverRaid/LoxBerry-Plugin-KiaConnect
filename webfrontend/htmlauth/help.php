@@ -15,18 +15,23 @@ if (empty($vehicles)) {
 }
 $active_id = $_GET["vehicle"] ?? $vehicles[0]["id"];
 
-LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
+LBWeb::lbheader("Kia2Lox", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
 $kia2lox_active_tab = "help";
 require "inc_header.php";
 ?>
 
 	<div class="kia2lox-card">
-		<h2><?php echo kia2lox_t("HELP.ABOUT_TITLE"); ?></h2>
-		<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.ABOUT_TEXT_1"); ?></p>
-		<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.ABOUT_TEXT_2"); ?></p>
-		<div class="kia2lox-about-meta">
-			<span class="kia2lox-version-chip"><?php echo htmlspecialchars(kia2lox_t("HELP.VERSION_LABEL")); ?> <?php echo htmlspecialchars($version); ?></span>
-			<a class="kia2lox-help-link" href="https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect" target="_blank" rel="noopener"><?php echo htmlspecialchars(kia2lox_t("HELP.GITHUB_LINK")); ?></a>
+		<div class="kia2lox-about-layout">
+			<img class="kia2lox-about-logo" src="assets/logo.png" alt="Kia2Lox">
+			<div class="kia2lox-about-content">
+				<h2><?php echo kia2lox_t("HELP.ABOUT_TITLE"); ?></h2>
+				<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.ABOUT_TEXT_1"); ?></p>
+				<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.ABOUT_TEXT_2"); ?></p>
+				<div class="kia2lox-about-meta">
+					<span class="kia2lox-version-chip"><?php echo htmlspecialchars(kia2lox_t("HELP.VERSION_LABEL")); ?> <?php echo htmlspecialchars($version); ?></span>
+					<a class="kia2lox-help-link" href="https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect" target="_blank" rel="noopener"><?php echo htmlspecialchars(kia2lox_t("HELP.GITHUB_LINK")); ?></a>
+				</div>
+			</div>
 		</div>
 	</div>
 

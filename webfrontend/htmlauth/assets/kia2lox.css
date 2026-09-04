@@ -536,6 +536,12 @@ body { background: var(--bg); }
 	flex-wrap: wrap;
 }
 .kia2lox-card-head form { margin: 0; }
+.kia2lox-refresh-form {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
 .kia2lox-log-actions { display: flex; align-items: center; gap: 8px; }
 
 .kia2lox-checkbox {
@@ -642,6 +648,23 @@ body { background: var(--bg); }
 .kia2lox-save-feedback.show { opacity: 1; }
 .kia2lox-save-feedback.kia2lox-save-ok { color: var(--success); }
 .kia2lox-save-feedback.kia2lox-save-error { color: var(--danger); }
+.kia2lox-spinner {
+	display: inline-block;
+	width: 11px;
+	height: 11px;
+	margin-right: 5px;
+	vertical-align: -1px;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: kia2lox-spin 0.7s linear infinite;
+}
+@keyframes kia2lox-spin {
+	to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+	.kia2lox-spinner { animation-duration: 1.6s; }
+}
 
 table.kia2lox-schedule {
 	width: 100%;
@@ -1009,6 +1032,32 @@ table.kia2lox-schedule tr:last-child td { border-bottom: none; }
 	font-size: 12.5px;
 }
 
+.kia2lox-about-layout {
+	display: flex;
+	align-items: flex-start;
+	gap: 20px;
+}
+.kia2lox-about-logo {
+	flex: 0 0 auto;
+	width: 64px;
+	height: 64px;
+	border-radius: 16px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.kia2lox-about-content {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.kia2lox-about-content h2 {
+	margin-top: 0;
+}
+@media (max-width: 520px) {
+	.kia2lox-about-layout {
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+	}
+}
 .kia2lox-about-meta {
 	display: flex;
 	align-items: center;
