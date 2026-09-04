@@ -51,7 +51,7 @@ $ms_reachable = $ms_ip !== "" ? kia2lox_ping_miniserver($ms_ip) : null;
 $next_time = kia2lox_next_passive_time($active, date("H:i"));
 $history = kia2lox_load_history($active_id);
 
-LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
+LBWeb::lbheader("Kia2Lox", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
 $kia2lox_active_tab = "overview";
 require "inc_header.php";
 ?>

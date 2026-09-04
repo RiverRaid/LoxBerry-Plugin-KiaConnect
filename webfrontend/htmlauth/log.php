@@ -55,7 +55,7 @@ if ($log_total > $max_lines) {
 }
 $log_display = implode("\n", $log_lines);
 
-LBWeb::lbheader("Kia2Lox V$version", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
+LBWeb::lbheader("Kia2Lox", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
 $kia2lox_active_tab = "log";
 require "inc_header.php";
 ?>
