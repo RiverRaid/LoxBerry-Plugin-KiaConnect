@@ -54,6 +54,50 @@ PCONFIG_BASE = os.environ.get("LBPCONFIG", "/opt/loxberry/config/plugins")
 PDATA_BASE = os.environ.get("LBPDATA", "/opt/loxberry/data/plugins")
 CONFIG_PATH = os.path.join(PCONFIG_BASE, PLUGIN_FOLDER, "pluginconfig.json")
 STATE_PATH = os.path.join(PDATA_BASE, PLUGIN_FOLDER, "state.json")
+PLUGINDATABASE_PATH = "/opt/loxberry/data/system/plugindatabase.json"
+
+# Schwellwerte wie in LoxBerrys eigenem Log-System (loxberry_log.php):
+# eine Zeile wird nur geschrieben, wenn der in der Pluginverwaltung
+# eingestellte Log-Level (0=nur Notfaelle ... 7=Debug) groesser als der
+# hier hinterlegte Schwellwert ist.
+LOG_LEVEL_THRESHOLDS = {"DEBUG": 6, "INFO": 5, "OK": 4, "WARNING": 3, "ERROR": 2, "CRITICAL": 1}
+
+# Werden einmalig zu Beginn von main() gesetzt und danach von log() gelesen.
+LOG_LEVEL = 6
+EXPLICIT_RUN = False
+
+
+def load_loglevel() -> int:
+    """Liest den in der LoxBerry-Pluginverwaltung fuer dieses Plugin
+    eingestellten Log-Level aus der zentralen Plugin-Datenbank. Kann die
+    Datei nicht gelesen/geparst werden (z.B. andere Rechte), wird auf 6
+    (INFO) zurueckgefallen."""
+
+    try:
+        with open(PLUGINDATABASE_PATH, "r", encoding="utf-8") as f:
+            db = json.load(f)
+        for entry in db.values():
+            if isinstance(entry, dict) and entry.get("folder") == PLUGIN_FOLDER:
+                return int(entry.get("loglevel", 6))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        pass
+    return 6
+
+
+def log(level: str, msg: str) -> None:
+    """Schreibt eine Zeile mit LoxBerry-typischem Level-Tag (<OK>, <INFO>,
+    <WARNING>, <ERROR>, <CRITICAL>) nach stdout - landet je nach Aufrufer
+    entweder ueber den Cron-Wrapper oder den manuellen/HTTP-Trigger-Aufruf
+    in poll.log. Bei einem regulaeren Cron-Durchlauf wird dabei der
+    eingestellte Log-Level beachtet und leisere Zeilen unterdrueckt.
+    Explizite Aufrufe (Force-Refresh-Button, HTTP-Trigger) protokollieren
+    dagegen immer alles, damit inc_vehicles.php::kia2lox_manual_refresh()
+    Fehler zuverlaessig an ihrem <ERROR>/<CRITICAL>-Tag erkennt, unabhaengig
+    vom eingestellten Log-Level."""
+
+    if not EXPLICIT_RUN and LOG_LEVEL <= LOG_LEVEL_THRESHOLDS[level]:
+        return
+    print(f"<{level}> {msg}")
 
 
 def history_path(vehicle_id: str) -> str:
@@ -101,12 +145,12 @@ def append_history(vehicle_id: str, now: datetime.datetime, soc, charging=None, 
 
 def load_config() -> dict:
     if not os.path.exists(CONFIG_PATH):
-        print(f"FEHLER: Konfigurationsdatei nicht gefunden: {CONFIG_PATH}")
+        log("CRITICAL", f"Konfigurationsdatei nicht gefunden: {CONFIG_PATH}")
         sys.exit(1)
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         config = json.load(f)
     if "vehicles" not in config or not isinstance(config["vehicles"], list):
-        print('FEHLER: Konfigurationsdatei enthaelt keine Liste "vehicles"')
+        log("CRITICAL", 'Konfigurationsdatei enthaelt keine Liste "vehicles"')
         sys.exit(1)
     return config
 
@@ -271,7 +315,7 @@ def log_poll_attempt(vstate: dict, now: datetime.datetime, kind: str, ok: bool) 
 def send_udp(ip: str, port: int, message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.sendto(message.encode("utf-8"), (ip, port))
-    print(f"  UDP gesendet an {ip}:{port} -> {message}")
+    log("DEBUG", f"UDP gesendet an {ip}:{port} -> {message}")
 
 
 def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: datetime.datetime) -> None:
@@ -287,7 +331,7 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
 
     login_result = manager.login()
     if login_result is not True:
-        raise RuntimeError(f"Login benoetigt zusaetzliche Bestaetigung (OTP/2FA): {login_result}")
+        raise RuntimeError(f"Login benötigt zusätzliche Bestätigung (OTP/2FA): {login_result}")
 
     udp_ip = vehicle_config["udp_target_ip"]
     udp_port = int(vehicle_config["udp_target_port"])
@@ -322,11 +366,13 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
         }
         append_history(vehicle_config["id"], now, soc, charging=charging, plugged=plugged)
 
-        print(
-            f"  [{label}] {vehicle.name}: SOC={soc}% RANGE={range_km}km "
+        last_updated_str = vehicle.last_updated_at.strftime("%Y-%m-%d %H:%M:%S") if vehicle.last_updated_at else "-"
+        log(
+            "OK",
+            f"[{label}] {vehicle.name}: SOC={soc}% RANGE={range_km}km "
             f"CHARGING={charging} PLUGGED={plugged} "
             f"FULL={full} FULLPARKED={full_parked} RECHARGE100={recharge_needed} "
-            f"LOWBATTERY={low_battery} (Stand: {vehicle.last_updated_at})"
+            f"LOWBATTERY={low_battery} (Stand: {last_updated_str})"
         )
 
         send_udp(udp_ip, udp_port, f"SOC={soc}")
@@ -340,10 +386,15 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
 
 
 def main() -> None:
+    global LOG_LEVEL, EXPLICIT_RUN
+
     parser = argparse.ArgumentParser(description="Kia2Lox Ladezustand abfragen und per UDP senden")
     parser.add_argument("--force", action="store_true", help="Frisches Update vom Fahrzeug anfordern")
     parser.add_argument("--vehicle", help="Nur dieses eine Fahrzeug abfragen (id aus pluginconfig.json)")
     args = parser.parse_args()
+
+    LOG_LEVEL = load_loglevel()
+    EXPLICIT_RUN = bool(args.vehicle)
 
     config = load_config()
     state = load_state()
@@ -355,7 +406,7 @@ def main() -> None:
     if args.vehicle:
         vehicles = [v for v in vehicles if v.get("id") == args.vehicle]
         if not vehicles:
-            print(f"FEHLER: Kein Fahrzeug mit id={args.vehicle} in der Konfiguration gefunden")
+            log("ERROR", f"Kein Fahrzeug mit id={args.vehicle} in der Konfiguration gefunden")
             sys.exit(1)
 
     if not vehicles:
@@ -386,13 +437,13 @@ def main() -> None:
         if not any_due:
             return
 
-    print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Kia2Lox Abfrage startet ({trigger})")
+    log("INFO", f"{now.strftime('%Y-%m-%d %H:%M:%S')} Kia2Lox Abfrage startet ({trigger})")
 
     for vehicle_config in vehicles:
         vehicle_id = vehicle_config.get("id")
         label = vehicle_config.get("name", vehicle_id)
         if not vehicle_id:
-            print(f"FEHLER: Fahrzeug ohne id in der Konfiguration uebersprungen: {vehicle_config.get('name')}")
+            log("ERROR", f"Fahrzeug ohne id in der Konfiguration uebersprungen: {vehicle_config.get('name')}")
             continue
 
         # Solange die Zugangsdaten noch nie erfolgreich getestet wurden
@@ -402,9 +453,9 @@ def main() -> None:
         # (PHP) das erkennt und keinen Erfolg meldet.
         if not vehicle_config.get("kia_connected"):
             if explicit_vehicle:
-                print(f"FEHLER [{label}]: Zugangsdaten noch nicht erfolgreich getestet - keine Abfrage moeglich.")
+                log("ERROR", f"[{label}]: Zugangsdaten noch nicht erfolgreich getestet - keine Abfrage moeglich.")
             else:
-                print(f"[{label}] uebersprungen: Zugangsdaten noch nicht erfolgreich getestet.")
+                log("WARNING", f"[{label}] uebersprungen: Zugangsdaten noch nicht erfolgreich getestet.")
             continue
 
         vstate = get_vehicle_state(state, vehicle_id)
@@ -425,12 +476,12 @@ def main() -> None:
             poll_vehicle_config(vehicle_config, vstate, do_force, now)
         except Exception as exc:  # noqa: BLE001 - ein Fahrzeug darf die anderen nicht blockieren
             ok = False
-            print(f"FEHLER [{label}]: Abfrage fehlgeschlagen: {exc}")
+            log("ERROR", f"[{label}]: Abfrage fehlgeschlagen: {exc}")
         vstate["last_poll_ok"] = ok
         log_poll_attempt(vstate, now, "force" if do_force else "passive", ok)
 
     save_state(state)
-    print("Fertig.")
+    log("INFO", "Fertig.")
 
 
 if __name__ == "__main__":

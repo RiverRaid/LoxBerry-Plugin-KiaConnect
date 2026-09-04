@@ -402,15 +402,20 @@ function kia2lox_manual_refresh($vehicle_id, $force = true) {
 	$log_path = $lbplogdir . "/poll.log";
 	@file_put_contents($log_path, $output . "\n", FILE_APPEND | LOCK_EX);
 
-	if (strpos($output, "FEHLER") !== false) {
-		// Erste FEHLER-Zeile als Kurzfassung der Meldung nehmen.
+	// kia2lox_poll.py taggt Fehlermeldungen mit <ERROR>/<CRITICAL>
+	// (siehe log() dort) - daran erkennen wir hier einen Fehlschlag. Das
+	// Tag selbst ist nur fuer diese Erkennung gedacht und wird aus der an
+	// die Oberflaeche zurueckgegebenen Meldung wieder entfernt.
+	if (strpos($output, "<ERROR>") !== false || strpos($output, "<CRITICAL>") !== false) {
+		// Erste Fehler-Zeile als Kurzfassung der Meldung nehmen.
 		$error = $output;
 		foreach (explode("\n", $output) as $line) {
-			if (strpos($line, "FEHLER") !== false) {
+			if (strpos($line, "<ERROR>") !== false || strpos($line, "<CRITICAL>") !== false) {
 				$error = trim($line);
 				break;
 			}
 		}
+		$error = trim(preg_replace('/^<[A-Z]+>\s*/', '', $error));
 		return ["ok" => false, "error" => $error];
 	}
 	return ["ok" => true];
