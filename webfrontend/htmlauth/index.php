@@ -16,7 +16,7 @@ $vehicles = kia2lox_load_vehicles();
 $message = null;
 $message_type = null; // "ok" oder "error"
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 	$action = $_POST["action"] ?? "";
 
 	if ($action === "add_vehicle") {
