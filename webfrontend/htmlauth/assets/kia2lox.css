@@ -1,0 +1,184 @@
+/* Kia2Lox - gemeinsame Design-Tokens und Grundkomponenten.
+   Uebernommen aus dem abgestimmten Entwurf (Kia-Haendlerfarben,
+   PV-Solcast-NG-Layout). Wird schrittweise erweitert, sobald weitere
+   Seiten (Uebersicht, Log) dazukommen. */
+
+:root {
+	--bg: #E6E8EA;
+	--surface: #FFFFFF;
+	--surface-alt: #F5F6F7;
+	--text: #1A1D20;
+	--text-muted: #5B6267;
+	--border: #DCDFE1;
+
+	--accent: #33454F;
+	--accent-strong: #1F2E36;
+	--success: #2F9E5B;
+	--success-bg: #E4F5EA;
+	--success-bg-strong: #BFE9CE;
+	--danger: #C1443B;
+	--danger-bg: #FBEAEA;
+	--danger-border: #F0C3C3;
+
+	--btn-disabled-bg: #DCDFE1;
+	--btn-disabled-text: #8B9297;
+	--focus: #33454F;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #101214;
+		--surface: #1C2024;
+		--surface-alt: #22262A;
+		--text: #E7E9EA;
+		--text-muted: #9AA1A6;
+		--border: #31363B;
+
+		--accent: #7C8B93;
+		--accent-strong: #9AAAB2;
+		--success: #3FBD74;
+		--success-bg: #173225;
+		--success-bg-strong: #1F4A31;
+		--danger: #E17A72;
+		--danger-bg: #3A2222;
+		--danger-border: #5C2E2E;
+
+		--btn-disabled-bg: #2C3135;
+		--btn-disabled-text: #6B7278;
+		--focus: #7C8B93;
+	}
+}
+
+.kia2lox-page {
+	font-family: 'Segoe UI', system-ui, sans-serif;
+	color: var(--text);
+	max-width: 900px;
+}
+
+.kia2lox-vehicle-bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 18px;
+}
+.kia2lox-vehicle-pill {
+	display: inline-block;
+	padding: 8px 14px;
+	border-radius: 20px;
+	background: var(--surface-alt);
+	border: 1px solid var(--border);
+	color: var(--text-muted);
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+}
+.kia2lox-vehicle-pill.active {
+	background: var(--success-bg);
+	border-color: var(--success-bg-strong);
+	color: var(--text);
+}
+.kia2lox-vehicle-pill:hover { color: var(--text); }
+
+.kia2lox-message {
+	border-radius: 10px;
+	padding: 12px 16px;
+	margin-bottom: 18px;
+	font-size: 13.5px;
+}
+.kia2lox-message-ok {
+	background: var(--success-bg);
+	border: 1px solid var(--success-bg-strong);
+	color: var(--text);
+}
+.kia2lox-message-error {
+	background: var(--danger-bg);
+	border: 1px solid var(--danger-border);
+	color: var(--text);
+}
+
+.kia2lox-card {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 22px 24px;
+	margin-bottom: 18px;
+}
+.kia2lox-card h2, .kia2lox-card h3 {
+	margin: 0 0 4px;
+	font-weight: 700;
+}
+.kia2lox-card h2 { font-size: 16px; }
+.kia2lox-card h3 { font-size: 14.5px; }
+.kia2lox-card .kia2lox-desc {
+	margin: 0 0 18px;
+	color: var(--text-muted);
+	font-size: 13.5px;
+	max-width: 60ch;
+}
+
+.kia2lox-field-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+	gap: 16px;
+	margin-bottom: 16px;
+}
+.kia2lox-field { display: flex; flex-direction: column; gap: 6px; }
+.kia2lox-field label { font-size: 13px; font-weight: 600; color: var(--text); }
+.kia2lox-field .kia2lox-hint { font-size: 12px; color: var(--text-muted); margin: -2px 0 0; }
+.kia2lox-field input {
+	font-family: inherit;
+	font-size: 14px;
+	color: var(--text);
+	background: var(--surface-alt);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 9px 11px;
+}
+.kia2lox-field input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+.kia2lox-inline-form {
+	display: flex;
+	align-items: flex-end;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.kia2lox-btn {
+	appearance: none;
+	border: none;
+	font-family: inherit;
+	font-size: 13.5px;
+	font-weight: 600;
+	border-radius: 8px;
+	padding: 9px 18px;
+	cursor: pointer;
+	background: var(--success);
+	color: #FFFFFF;
+}
+.kia2lox-btn:hover { filter: brightness(1.05); }
+.kia2lox-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.kia2lox-btn-secondary {
+	appearance: none;
+	border: 1px solid var(--accent);
+	background: transparent;
+	color: var(--accent-strong);
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	border-radius: 7px;
+	padding: 8px 14px;
+	cursor: pointer;
+}
+.kia2lox-btn-danger {
+	appearance: none;
+	border: none;
+	background: var(--danger);
+	color: #FFFFFF;
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	border-radius: 7px;
+	padding: 8px 14px;
+	cursor: pointer;
+}

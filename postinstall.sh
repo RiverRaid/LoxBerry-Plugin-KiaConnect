@@ -20,8 +20,34 @@ echo "<INFO> postinstall.sh: Erzeuge Verzeichnisse fuer Konfiguration und Daten"
 mkdir -p "$PCONFIG"
 mkdir -p "$PDATA"
 
-echo "<INFO> postinstall.sh: Setze Ausfuehrungsrechte fuer Python-Skript"
+echo "<INFO> postinstall.sh: Setze Ausfuehrungsrechte fuer Python-Skripte"
 chmod 755 "$PBIN/kia2lox_poll.py" 2>/dev/null
+chmod 755 "$PBIN/kia2lox_test_login.py" 2>/dev/null
+
+# Bei einer frischen Installation (noch keine pluginconfig.json vorhanden)
+# gleich ein leeres Standard-Fahrzeug anlegen, damit die Einstellungsseite
+# sofort etwas zum Ausfuellen zeigt, statt mit einer leeren Fahrzeugliste
+# zu starten.
+CONFIG_FILE="$PCONFIG/pluginconfig.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+	echo "<INFO> postinstall.sh: Lege Standard-Fahrzeug an"
+	cat > "$CONFIG_FILE" <<'EOF'
+{
+  "vehicles": [
+    {
+      "id": "v1",
+      "name": "Fahrzeug 1",
+      "kia_username": "",
+      "kia_password": "",
+      "kia_pin": "",
+      "udp_target_ip": "",
+      "udp_target_port": 7000
+    }
+  ]
+}
+EOF
+	chmod 640 "$CONFIG_FILE"
+fi
 
 # hyundai_kia_connect_api benoetigt Python >=3.12. Viele LoxBerry-Systeme
 # (auch dieses) laufen aber noch mit einem aelteren System-Python (z.B.
