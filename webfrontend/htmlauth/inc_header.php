@@ -54,7 +54,7 @@ function kia2lox_page_link($file, $vehicle_id) {
 
 <div class="kia2lox-page">
 
-	<?php if ($kia2lox_active_tab === "settings" || $kia2lox_active_tab === "overview"): ?>
+	<?php if ($kia2lox_active_tab === "settings" || ($kia2lox_active_tab === "overview" && count($vehicles) > 1)): ?>
 	<div class="kia2lox-vehicle-bar">
 		<?php foreach ($vehicles as $v): ?>
 			<div class="kia2lox-vehicle-pill<?php echo $v["id"] === $active_id ? " active" : ""; ?>">
