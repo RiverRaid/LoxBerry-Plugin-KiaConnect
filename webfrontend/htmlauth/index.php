@@ -222,9 +222,40 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		unset($v);
 		kia2lox_save_vehicles($vehicles);
 		kia2lox_json_response(["ok" => true, "message" => kia2lox_t("SETTINGS.INTERVAL_SAVED")]);
+	} elseif ($action === "save_warnings") {
+		$id = $_POST["vehicle_id"] ?? "";
+
+		$clamp_int = function ($raw, $min, $max, $default) {
+			if (!is_numeric($raw)) {
+				return $default;
+			}
+			return max($min, min($max, (int)$raw));
+		};
+
+		$full_soc_threshold = $clamp_int($_POST["full_soc_threshold"] ?? null, 95, 100, KIA2LOX_DEFAULT_FULL_SOC_THRESHOLD);
+		$full_hours = $clamp_int($_POST["full_hours"] ?? null, 1, 5, KIA2LOX_DEFAULT_FULL_HOURS);
+		$full_parked_hours = $clamp_int($_POST["full_parked_hours"] ?? null, 1, 5, KIA2LOX_DEFAULT_FULL_PARKED_HOURS);
+		$recharge_reminder_days = $clamp_int($_POST["recharge_reminder_days"] ?? null, 30, 60, KIA2LOX_DEFAULT_RECHARGE_REMINDER_DAYS);
+		$low_soc_threshold = $clamp_int($_POST["low_soc_threshold"] ?? null, 5, 20, KIA2LOX_DEFAULT_LOW_SOC_THRESHOLD);
+		$low_battery_hours = $clamp_int($_POST["low_battery_hours"] ?? null, 1, 5, KIA2LOX_DEFAULT_LOW_BATTERY_HOURS);
+
+		foreach ($vehicles as &$v) {
+			if ($v["id"] === $id) {
+				$v["full_soc_threshold"] = $full_soc_threshold;
+				$v["full_hours"] = $full_hours;
+				$v["full_parked_hours"] = $full_parked_hours;
+				$v["recharge_reminder_days"] = $recharge_reminder_days;
+				$v["low_soc_threshold"] = $low_soc_threshold;
+				$v["low_battery_hours"] = $low_battery_hours;
+			}
+		}
+		unset($v);
+		kia2lox_save_vehicles($vehicles);
+		kia2lox_json_response(["ok" => true, "message" => kia2lox_t("SETTINGS.WARNINGS_SAVED")]);
 	} elseif ($action === "manual_refresh") {
 		$id = $_POST["vehicle_id"] ?? "";
-		$result = kia2lox_manual_refresh($id);
+		$force = ($_POST["refresh_mode"] ?? "force") !== "passive";
+		$result = kia2lox_manual_refresh($id, $force);
 		if ($result["ok"]) {
 			kia2lox_json_response(["ok" => true, "message" => kia2lox_t("SETTINGS.REFRESH_DONE")]);
 		} else {
@@ -388,14 +419,6 @@ require "inc_header.php";
 				<h2><?php echo htmlspecialchars(kia2lox_t("SETTINGS.INTERVAL_TITLE")); ?></h2>
 				<p class="kia2lox-desc"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.INTERVAL_DESC")); ?></p>
 			</div>
-			<?php if ($connected): ?>
-				<form method="post" action="index.php" id="kia2lox-refresh-form" class="kia2lox-refresh-form">
-					<input type="hidden" name="kia2lox_action" value="manual_refresh">
-					<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($active_id); ?>">
-					<button type="submit" class="kia2lox-vehicle-pill-add"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.FORCE_REFRESH_BUTTON")); ?></button>
-					<span class="kia2lox-save-feedback" id="kia2lox-save-feedback-refresh"></span>
-				</form>
-			<?php endif; ?>
 		</div>
 
 		<?php if (!$connected): ?>
@@ -426,7 +449,15 @@ require "inc_header.php";
 			<div class="kia2lox-interval-grid">
 				<div class="kia2lox-field-block">
 					<div class="kia2lox-field">
-						<label for="passive_mode"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_PASSIVE_MODE")); ?></label>
+						<div class="kia2lox-label-row">
+							<label for="passive_mode"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_PASSIVE_MODE")); ?></label>
+							<?php if ($connected): ?>
+								<button type="button" class="kia2lox-vehicle-pill-add kia2lox-icon-refresh-btn" data-role="none" id="kia2lox-passive-refresh-btn" title="<?php echo htmlspecialchars(kia2lox_t("SETTINGS.PASSIVE_REFRESH_BUTTON")); ?>" aria-label="<?php echo htmlspecialchars(kia2lox_t("SETTINGS.PASSIVE_REFRESH_BUTTON")); ?>">
+									<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L14 11h7V4l-2.35 2.35z"/></svg>
+								</button>
+								<span class="kia2lox-save-feedback" id="kia2lox-save-feedback-passive-refresh"></span>
+							<?php endif; ?>
+						</div>
 						<select id="passive_mode" name="passive_mode" data-role="none">
 							<?php foreach (KIA2LOX_INTERVAL_OPTIONS as $opt): ?>
 								<option value="<?php echo $opt; ?>" <?php echo ($passive_mode === "interval" && $passive_interval === $opt) ? "selected" : ""; ?>>
@@ -478,7 +509,15 @@ require "inc_header.php";
 
 				<div class="kia2lox-field-block">
 					<div class="kia2lox-field">
-						<label for="force_freq"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_FORCE_FREQ")); ?></label>
+						<div class="kia2lox-label-row">
+							<label for="force_freq"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_FORCE_FREQ")); ?></label>
+							<?php if ($connected): ?>
+								<button type="button" class="kia2lox-vehicle-pill-add kia2lox-icon-refresh-btn" data-role="none" id="kia2lox-force-refresh-btn" title="<?php echo htmlspecialchars(kia2lox_t("SETTINGS.FORCE_REFRESH_BUTTON")); ?>" aria-label="<?php echo htmlspecialchars(kia2lox_t("SETTINGS.FORCE_REFRESH_BUTTON")); ?>">
+									<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L14 11h7V4l-2.35 2.35z"/></svg>
+								</button>
+								<span class="kia2lox-save-feedback" id="kia2lox-save-feedback-force-refresh"></span>
+							<?php endif; ?>
+						</div>
 						<select id="force_freq" name="force_freq" data-role="none">
 							<option value="0" <?php echo $force_freq === 0 ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.OPTION_FORCE_NEVER")); ?></option>
 							<?php for ($i = 1; $i <= 4; $i++): ?>
@@ -523,6 +562,73 @@ require "inc_header.php";
 			</table>
 		</form>
 		<?php endif; ?>
+	</div>
+
+	<div class="kia2lox-card" id="kia2lox-warnings-card">
+		<button type="button" class="kia2lox-card-head kia2lox-collapse-toggle" data-role="none" id="kia2lox-warnings-toggle" aria-expanded="false" aria-controls="kia2lox-warnings-body">
+			<svg class="kia2lox-collapse-chevron" id="kia2lox-warnings-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+			<h2><?php echo htmlspecialchars(kia2lox_t("SETTINGS.WARNINGS_TITLE")); ?></h2>
+		</button>
+
+		<div id="kia2lox-warnings-body" class="kia2lox-collapse-body" hidden>
+		<p class="kia2lox-desc"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.WARNINGS_DESC")); ?></p>
+		<?php if (!$connected): ?>
+			<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.WARNINGS_LOCKED_HINT")); ?></p>
+		<?php else: ?>
+
+		<?php
+		$full_soc_threshold = (int)($active["full_soc_threshold"] ?? KIA2LOX_DEFAULT_FULL_SOC_THRESHOLD);
+		$full_hours = (int)($active["full_hours"] ?? KIA2LOX_DEFAULT_FULL_HOURS);
+		$full_parked_hours = (int)($active["full_parked_hours"] ?? KIA2LOX_DEFAULT_FULL_PARKED_HOURS);
+		$recharge_reminder_days = (int)($active["recharge_reminder_days"] ?? KIA2LOX_DEFAULT_RECHARGE_REMINDER_DAYS);
+		$low_soc_threshold = (int)($active["low_soc_threshold"] ?? KIA2LOX_DEFAULT_LOW_SOC_THRESHOLD);
+		$low_battery_hours = (int)($active["low_battery_hours"] ?? KIA2LOX_DEFAULT_LOW_BATTERY_HOURS);
+		?>
+
+		<form method="post" action="index.php" id="kia2lox-warnings-form">
+			<input type="hidden" name="kia2lox_action" value="save_warnings">
+			<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($active_id); ?>">
+
+			<div class="kia2lox-field-grid">
+				<div class="kia2lox-field">
+					<label for="full_soc_threshold"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_FULL_SOC_THRESHOLD")); ?></label>
+					<input type="number" id="full_soc_threshold" name="full_soc_threshold" data-role="none" min="95" max="100" step="1" value="<?php echo $full_soc_threshold; ?>">
+					<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HINT_FULL_SOC_THRESHOLD")); ?></p>
+				</div>
+				<div class="kia2lox-field">
+					<label for="full_hours"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_FULL_HOURS")); ?></label>
+					<input type="number" id="full_hours" name="full_hours" data-role="none" min="1" max="5" step="1" value="<?php echo $full_hours; ?>">
+					<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HINT_FULL_HOURS")); ?></p>
+				</div>
+				<div class="kia2lox-field">
+					<label for="full_parked_hours"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_FULL_PARKED_HOURS")); ?></label>
+					<input type="number" id="full_parked_hours" name="full_parked_hours" data-role="none" min="1" max="5" step="1" value="<?php echo $full_parked_hours; ?>">
+					<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HINT_FULL_PARKED_HOURS")); ?></p>
+				</div>
+				<div class="kia2lox-field">
+					<label for="recharge_reminder_days"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_RECHARGE_REMINDER_DAYS")); ?></label>
+					<input type="number" id="recharge_reminder_days" name="recharge_reminder_days" data-role="none" min="30" max="60" step="1" value="<?php echo $recharge_reminder_days; ?>">
+					<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HINT_RECHARGE_REMINDER_DAYS")); ?></p>
+				</div>
+				<div class="kia2lox-field">
+					<label for="low_soc_threshold"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_LOW_SOC_THRESHOLD")); ?></label>
+					<input type="number" id="low_soc_threshold" name="low_soc_threshold" data-role="none" min="5" max="20" step="1" value="<?php echo $low_soc_threshold; ?>">
+					<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HINT_LOW_SOC_THRESHOLD")); ?></p>
+				</div>
+				<div class="kia2lox-field">
+					<label for="low_battery_hours"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_LOW_BATTERY_HOURS")); ?></label>
+					<input type="number" id="low_battery_hours" name="low_battery_hours" data-role="none" min="1" max="5" step="1" value="<?php echo $low_battery_hours; ?>">
+					<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.HINT_LOW_BATTERY_HOURS")); ?></p>
+				</div>
+			</div>
+
+			<div class="kia2lox-save-row">
+				<button type="submit" class="kia2lox-btn" id="kia2lox-save-warnings" disabled><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SAVE_WARNINGS_BUTTON")); ?></button>
+				<span class="kia2lox-save-feedback" id="kia2lox-save-feedback-warnings"></span>
+			</div>
+		</form>
+		<?php endif; ?>
+		</div>
 	</div>
 
 	<?php
@@ -731,13 +837,90 @@ require "inc_header.php";
 		if (kia2loxSaveGroups.ms) { kia2loxSaveGroups.ms.resetBaseline(); }
 	});
 
-	// Nach einem erfolgreichen Force-Refresh kurz die Erfolgsmeldung
-	// zeigen, dann neu laden, damit "Heute geplant" & Co. den frischen
-	// Stand zeigen. Bei einem Fehler bleibt die Seite stehen, damit die
-	// Fehlermeldung lesbar bleibt.
-	kia2loxAjaxSave(document.getElementById("kia2lox-refresh-form"), "kia2lox-save-feedback-refresh", function () {
-		setTimeout(function () { window.location.reload(); }, 900);
-	}, KIA2LOX_L.loading_data);
+	kia2loxInitSaveGroup(
+		"warnings",
+		["full_soc_threshold", "full_hours", "full_parked_hours", "recharge_reminder_days", "low_soc_threshold", "low_battery_hours"],
+		"kia2lox-save-warnings"
+	);
+	kia2loxAjaxSave(document.getElementById("kia2lox-warnings-form"), "kia2lox-save-feedback-warnings", function () {
+		if (kia2loxSaveGroups.warnings) { kia2loxSaveGroups.warnings.resetBaseline(); }
+	});
+
+	// Einklappbare "Warnungen"-Box: Zustand (auf/zu) je Browser in
+	// localStorage merken, Standard ist eingeklappt. Ein <button
+	// data-role="none"> statt eines <form> als Klickflaeche, damit
+	// jQuery Mobile hier nichts umstrukturiert (bekanntes Problem in
+	// diesem Projekt).
+	(function () {
+		var toggle = document.getElementById("kia2lox-warnings-toggle");
+		var body = document.getElementById("kia2lox-warnings-body");
+		if (!toggle || !body) { return; }
+		var storageKey = "kia2lox_warnings_collapsed";
+		var expanded = false;
+		try {
+			expanded = localStorage.getItem(storageKey) === "0";
+		} catch (e) { /* localStorage nicht verfuegbar - Standard: eingeklappt */ }
+		function apply() {
+			body.hidden = !expanded;
+			toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+		}
+		apply();
+		toggle.addEventListener("click", function () {
+			expanded = !expanded;
+			apply();
+			try { localStorage.setItem(storageKey, expanded ? "0" : "1"); } catch (e) { /* ignorieren */ }
+		});
+	})();
+
+	// Reine Buttons statt <form> fuer die kleinen Refresh-Icons neben den
+	// Intervall-Labels - damit gibt es kein <form>-Element, das jQuery
+	// Mobile trotz data-role="none" umstrukturieren und aus der Zeile
+	// herausreissen koennte (bekanntes Verhalten in diesem Projekt).
+	// Nach Erfolg kurz die Meldung zeigen, dann neu laden, damit "Heute
+	// geplant" & Co. den frischen Stand zeigen. Bei Fehler bleibt die
+	// Seite stehen, damit die Fehlermeldung lesbar bleibt.
+	function kia2loxManualRefresh(btnId, feedbackId, mode) {
+		var btn = document.getElementById(btnId);
+		var feedback = document.getElementById(feedbackId);
+		if (!btn) { return; }
+		btn.addEventListener("click", function () {
+			btn.disabled = true;
+			if (feedback) {
+				clearTimeout(feedback._kia2loxHideTimer);
+				feedback.classList.remove("kia2lox-save-ok", "kia2lox-save-error");
+				feedback.innerHTML = '<span class="kia2lox-spinner"></span>' + KIA2LOX_L.loading_data;
+				feedback.classList.add("show");
+			}
+			var formData = new FormData();
+			formData.append("kia2lox_action", "manual_refresh");
+			formData.append("vehicle_id", <?php echo json_encode($active_id); ?>);
+			formData.append("refresh_mode", mode);
+			fetch("index.php", { method: "POST", body: formData })
+				.then(function (resp) { return resp.json(); })
+				.then(function (data) {
+					if (feedback) {
+						feedback.textContent = (data.ok ? "✓ " : "") + (data.message || (data.ok ? KIA2LOX_L.save_ok_default : KIA2LOX_L.save_error_default));
+						feedback.classList.remove("kia2lox-save-ok", "kia2lox-save-error");
+						feedback.classList.add(data.ok ? "kia2lox-save-ok" : "kia2lox-save-error", "show");
+					}
+					if (data.ok) {
+						setTimeout(function () { window.location.reload(); }, 900);
+					} else {
+						btn.disabled = false;
+					}
+				})
+				.catch(function () {
+					if (feedback) {
+						feedback.textContent = KIA2LOX_L.save_error_connection;
+						feedback.classList.remove("kia2lox-save-ok");
+						feedback.classList.add("kia2lox-save-error", "show");
+					}
+					btn.disabled = false;
+				});
+		});
+	}
+	kia2loxManualRefresh("kia2lox-passive-refresh-btn", "kia2lox-save-feedback-passive-refresh", "passive");
+	kia2loxManualRefresh("kia2lox-force-refresh-btn", "kia2lox-save-feedback-force-refresh", "force");
 
 	// Einzelnes Feld rot hinterlegen, sobald es beim Verlassen (blur)
 	// ungueltig/leer ist. Waehrend des Tippens wird die Markierung schon
@@ -940,6 +1123,10 @@ require "inc_header.php";
 			return null;
 		}
 
+		// Uhr-Symbol fuer noch bevorstehende (zukuenftige) Zeitpunkte ohne
+		// Log-Eintrag - erbt per currentColor die Textfarbe der Pille.
+		var KIA2LOX_CLOCK_ICON = '<svg viewBox="0 0 16 16" width="10" height="10" style="vertical-align:-1px"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.6V8.2L10.4 9.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 		function renderPills(container, kind, times) {
 			container.innerHTML = "";
 			if (times.length === 0) {
@@ -948,17 +1135,19 @@ require "inc_header.php";
 			}
 			times.forEach(function (time) {
 				var entry = findLogEntry(kind, time);
-				var cls, icon;
+				var cls, iconHtml;
 				if (entry && entry.ok) {
-					cls = "kia2lox-pill-ok"; icon = "✓";
+					cls = "kia2lox-pill-ok"; iconHtml = "✓";
 				} else if (entry && !entry.ok) {
-					cls = "kia2lox-pill-error"; icon = "✕";
+					cls = "kia2lox-pill-error"; iconHtml = "✕";
+				} else if (time > NOW_HHMM) {
+					cls = "kia2lox-pill-none"; iconHtml = KIA2LOX_CLOCK_ICON;
 				} else {
-					cls = "kia2lox-pill-none"; icon = "✕";
+					cls = "kia2lox-pill-none"; iconHtml = "✕";
 				}
 				var pill = document.createElement("span");
 				pill.className = "kia2lox-pill " + cls;
-				pill.textContent = icon + " " + time;
+				pill.innerHTML = iconHtml + " " + time;
 				container.appendChild(pill);
 			});
 		}

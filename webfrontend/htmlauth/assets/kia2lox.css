@@ -536,6 +536,51 @@ body { background: var(--bg); }
 	flex-wrap: wrap;
 }
 .kia2lox-card-head form { margin: 0; }
+
+/* Klickbarer Kartenkopf einer einklappbaren Box (z.B. "Warnungen") - ein
+   <button data-role="none"> statt eines <div onclick>, damit die Flaeche
+   per Tastatur bedienbar ist; die Browser-Standardoptik des <button>
+   muss dafuer explizit zurueckgesetzt werden. */
+.kia2lox-collapse-toggle {
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	border: none !important;
+	background: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+	width: 100%;
+	box-shadow: none !important;
+	/* !important noetig - LoxBerrys eigenes Theme (loxberry.css) setzt fuer
+	   <button> eine eigene display-Regel, die eine ungewichtete Klasse
+	   ueberstimmt (bekanntes Verhalten in diesem Projekt). Ohne dieses
+	   !important faellt der Button auf Block-Layout zurueck und Icon/
+	   Titel stapeln sich untereinander statt nebeneinander zu stehen. */
+	display: flex !important;
+	flex-direction: row !important;
+	justify-content: flex-start !important;
+	align-items: center !important;
+	gap: 10px !important;
+}
+.kia2lox-collapse-toggle:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 2px;
+}
+.kia2lox-collapse-toggle h2 { margin: 0; }
+.kia2lox-collapse-chevron {
+	color: var(--text-muted);
+	flex-shrink: 0;
+	transition: transform 0.15s ease;
+}
+.kia2lox-collapse-toggle[aria-expanded="true"] .kia2lox-collapse-chevron {
+	transform: rotate(180deg);
+}
+.kia2lox-collapse-body {
+	margin-top: 4px;
+}
 .kia2lox-refresh-form {
 	display: flex;
 	align-items: center;
@@ -543,6 +588,25 @@ body { background: var(--bg); }
 	flex-wrap: wrap;
 }
 .kia2lox-log-actions { display: flex; align-items: center; gap: 8px; }
+
+.kia2lox-label-row {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: center !important;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+.kia2lox-label-row label { margin-bottom: 0; }
+.kia2lox-icon-refresh-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 22px !important;
+	min-width: 22px !important;
+	height: 22px !important;
+	padding: 0 !important;
+}
+.kia2lox-icon-refresh-btn:disabled { opacity: 0.5; cursor: default; }
 
 .kia2lox-checkbox {
 	display: inline-flex;
@@ -990,7 +1054,7 @@ table.kia2lox-schedule tr:last-child td { border-bottom: none; }
 .kia2lox-chart-wrap svg { width: 100%; height: auto; min-width: 480px; display: block; }
 .kia2lox-chart-grid { stroke: var(--border); stroke-width: 1; }
 .kia2lox-chart-grid-base { stroke: var(--text-muted); }
-.kia2lox-chart-axis-label { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 10.5px; fill: var(--text-muted); }
+.kia2lox-chart-axis-label { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 10px; fill: var(--text-muted); }
 .kia2lox-chart-area { fill: var(--accent); fill-opacity: 0.14; stroke: none; }
 .kia2lox-chart-line { fill: none; stroke: var(--accent-strong); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 /* Datenpunkte: Farbe zeigt Stecker-/Ladestatus zu diesem Zeitpunkt. */
@@ -1016,6 +1080,10 @@ table.kia2lox-schedule tr:last-child td { border-bottom: none; }
 }
 .kia2lox-chart-tooltip strong { font-weight: 600; }
 .kia2lox-tt-value { font-family: Consolas, monospace; color: var(--accent-strong); }
+.kia2lox-tt-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.kia2lox-tt-dot-unplugged { background: var(--accent-strong); }
+.kia2lox-tt-dot-plugged { background: var(--info); }
+.kia2lox-tt-dot-charging { background: var(--success); }
 
 /* ---------- Hilfe ---------- */
 

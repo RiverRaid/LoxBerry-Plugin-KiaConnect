@@ -23,28 +23,16 @@ from hyundai_kia_connect_api import VehicleManager
 REGION_EUROPE = 1
 BRAND_KIA_ID = 1
 
-# Ab diesem Wert gilt der Akku als "voll" (100%, mit etwas Toleranz fuer
-# Rundung/leichte Messschwankungen).
-FULL_SOC_THRESHOLD = 99
-
-# Wie lange der Akku ununterbrochen "voll" gemessen werden muss, bevor
-# FULL=1 gesendet wird (unabhaengig davon, ob noch eingesteckt/am Laden).
-FULL_HOURS = 3
-
-# Wie lange das Fahrzeug zusaetzlich eingesteckt und nicht mehr ladend bei
-# vollem Akku stehen darf, bevor FULLPARKED=1 gesendet wird.
-FULL_PARKED_HOURS = 3
-
-# Nach wie vielen Tagen ohne vollen Ladezustand RECHARGE100=1 gesendet wird
-# (Empfehlung zum Zellausgleich).
-RECHARGE_REMINDER_DAYS = 30
-
-# Unter diesem Wert gilt der Akku als "niedrig".
-LOW_SOC_THRESHOLD = 10
-
-# Wie lange das Fahrzeug ununterbrochen mit niedrigem Akku und ohne zu
-# laden stehen darf, bevor LOWBATTERY=1 gesendet wird.
-LOW_BATTERY_HOURS = 3
+# Standardwerte fuer die Batteriepflege-Schwellwerte, falls ein Fahrzeug
+# (z.B. nach einem Upgrade von einer aelteren Version) noch keine eigenen
+# Werte in der pluginconfig.json hinterlegt hat. Der Benutzer kann diese
+# Werte pro Fahrzeug in den Einstellungen ("Warnungen") anpassen.
+DEFAULT_FULL_SOC_THRESHOLD = 99
+DEFAULT_FULL_HOURS = 3
+DEFAULT_FULL_PARKED_HOURS = 3
+DEFAULT_RECHARGE_REMINDER_DAYS = 30
+DEFAULT_LOW_SOC_THRESHOLD = 10
+DEFAULT_LOW_BATTERY_HOURS = 3
 
 # Wie lange der SOC-Verlauf fuer das Uebersichts-Diagramm aufgehoben wird.
 HISTORY_RETENTION_DAYS = 90
@@ -76,7 +64,8 @@ def load_loglevel() -> int:
     try:
         with open(PLUGINDATABASE_PATH, "r", encoding="utf-8") as f:
             db = json.load(f)
-        for entry in db.values():
+        plugins = db.get("plugins", db) if isinstance(db, dict) else {}
+        for entry in plugins.values():
             if isinstance(entry, dict) and entry.get("folder") == PLUGIN_FOLDER:
                 return int(entry.get("loglevel", 6))
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
@@ -182,26 +171,35 @@ def get_vehicle_state(state: dict, vehicle_id: str) -> dict:
     )
 
 
-def update_battery_health_state(vstate: dict, soc: int, plugged, charging: int, now: datetime.datetime) -> tuple[int, int, int, int]:
+def update_battery_health_state(vehicle_config: dict, vstate: dict, soc: int, plugged, charging: int, now: datetime.datetime) -> tuple[int, int, int, int]:
     """Aktualisiert den Zustand fuer die Batteriepflege-Hinweise eines
     einzelnen Fahrzeugs und gibt (full, full_parked, recharge_needed,
-    low_battery) als 0/1 zurueck.
+    low_battery) als 0/1 zurueck. Die Schwellwerte kommen pro Fahrzeug aus
+    vehicle_config (vom Benutzer in den Einstellungen -> "Warnungen"
+    einstellbar), mit Fallback auf die DEFAULT_*-Werte.
 
-    full:            Akku misst seit FULL_HOURS ununterbrochen >= 100%,
+    full:            Akku misst seit full_hours ununterbrochen >= full_soc_threshold,
                       unabhaengig von Stecker-/Ladestatus.
-    full_parked:     zusaetzlich seit FULL_PARKED_HOURS eingesteckt und
+    full_parked:     zusaetzlich seit full_parked_hours eingesteckt und
                       nicht mehr ladend (klassisches "steht auf dem
                       Ladegeraet voll herum").
-    recharge_needed: seit RECHARGE_REMINDER_DAYS keinen vollen Ladestand
+    recharge_needed: seit recharge_reminder_days keinen vollen Ladestand
                       mehr erreicht (Zellausgleich empfohlen).
-    low_battery:     Akku ist seit LOW_BATTERY_HOURS ununterbrochen unter
-                      LOW_SOC_THRESHOLD und laedt dabei nicht (Fahrzeug
+    low_battery:     Akku ist seit low_battery_hours ununterbrochen unter
+                      low_soc_threshold und laedt dabei nicht (Fahrzeug
                       wurde mit niedrigem Akku stehen gelassen).
     """
 
-    is_full = soc is not None and soc >= FULL_SOC_THRESHOLD
+    full_soc_threshold = int(vehicle_config.get("full_soc_threshold", DEFAULT_FULL_SOC_THRESHOLD) or DEFAULT_FULL_SOC_THRESHOLD)
+    full_hours = int(vehicle_config.get("full_hours", DEFAULT_FULL_HOURS) or DEFAULT_FULL_HOURS)
+    full_parked_hours = int(vehicle_config.get("full_parked_hours", DEFAULT_FULL_PARKED_HOURS) or DEFAULT_FULL_PARKED_HOURS)
+    recharge_reminder_days = int(vehicle_config.get("recharge_reminder_days", DEFAULT_RECHARGE_REMINDER_DAYS) or DEFAULT_RECHARGE_REMINDER_DAYS)
+    low_soc_threshold = int(vehicle_config.get("low_soc_threshold", DEFAULT_LOW_SOC_THRESHOLD) or DEFAULT_LOW_SOC_THRESHOLD)
+    low_battery_hours = int(vehicle_config.get("low_battery_hours", DEFAULT_LOW_BATTERY_HOURS) or DEFAULT_LOW_BATTERY_HOURS)
+
+    is_full = soc is not None and soc >= full_soc_threshold
     is_idle_full = is_full and bool(plugged) and not charging
-    is_low_idle = soc is not None and soc < LOW_SOC_THRESHOLD and not charging
+    is_low_idle = soc is not None and soc < low_soc_threshold and not charging
 
     if is_low_idle:
         if not vstate.get("low_since"):
@@ -225,13 +223,13 @@ def update_battery_health_state(vstate: dict, soc: int, plugged, charging: int, 
     full = 0
     if vstate.get("full_soc_since"):
         full_soc_since = datetime.datetime.fromisoformat(vstate["full_soc_since"])
-        if now - full_soc_since >= datetime.timedelta(hours=FULL_HOURS):
+        if now - full_soc_since >= datetime.timedelta(hours=full_hours):
             full = 1
 
     full_parked = 0
     if vstate.get("full_since"):
         full_since = datetime.datetime.fromisoformat(vstate["full_since"])
-        if now - full_since >= datetime.timedelta(hours=FULL_PARKED_HOURS):
+        if now - full_since >= datetime.timedelta(hours=full_parked_hours):
             full_parked = 1
 
     recharge_needed = 0
@@ -240,13 +238,13 @@ def update_battery_health_state(vstate: dict, soc: int, plugged, charging: int, 
         recharge_needed = 1
     else:
         last_full_dt = datetime.datetime.fromisoformat(last_full)
-        if now - last_full_dt >= datetime.timedelta(days=RECHARGE_REMINDER_DAYS):
+        if now - last_full_dt >= datetime.timedelta(days=recharge_reminder_days):
             recharge_needed = 1
 
     low_battery = 0
     if vstate.get("low_since"):
         low_since = datetime.datetime.fromisoformat(vstate["low_since"])
-        if now - low_since >= datetime.timedelta(hours=LOW_BATTERY_HOURS):
+        if now - low_since >= datetime.timedelta(hours=low_battery_hours):
             low_battery = 1
 
     return full, full_parked, recharge_needed, low_battery
@@ -349,7 +347,7 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
         charging = 1 if vehicle.ev_battery_is_charging else 0
         plugged = vehicle.ev_battery_is_plugged_in
 
-        full, full_parked, recharge_needed, low_battery = update_battery_health_state(vstate, soc, plugged, charging, now)
+        full, full_parked, recharge_needed, low_battery = update_battery_health_state(vehicle_config, vstate, soc, plugged, charging, now)
 
         vstate["last_values"] = {
             "soc": soc,

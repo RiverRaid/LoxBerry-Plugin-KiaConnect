@@ -156,7 +156,7 @@ require "inc_header.php";
 			<div class="kia2lox-info-banner" id="kia2lox-banner-balance">
 				<div class="kia2lox-info-banner-body">
 					<p class="kia2lox-info-banner-title"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BALANCE_TITLE")); ?></p>
-					<p class="kia2lox-info-banner-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BALANCE_TEXT")); ?></p>
+					<p class="kia2lox-info-banner-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BALANCE_TEXT", ["days" => (int)($active["recharge_reminder_days"] ?? KIA2LOX_DEFAULT_RECHARGE_REMINDER_DAYS)])); ?></p>
 					<div class="kia2lox-info-banner-actions">
 						<button class="kia2lox-btn-banner-ok" data-banner="balance" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_OK")); ?></button>
 						<button class="kia2lox-btn-banner-mute" data-banner="balance" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_MUTE")); ?></button>
@@ -182,7 +182,7 @@ require "inc_header.php";
 			<div class="kia2lox-info-banner" id="kia2lox-banner-lowbattery">
 				<div class="kia2lox-info-banner-body">
 					<p class="kia2lox-info-banner-title"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LOWBATTERY_TITLE")); ?></p>
-					<p class="kia2lox-info-banner-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LOWBATTERY_TEXT")); ?></p>
+					<p class="kia2lox-info-banner-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.LOWBATTERY_TEXT", ["threshold" => (int)($active["low_soc_threshold"] ?? KIA2LOX_DEFAULT_LOW_SOC_THRESHOLD)])); ?></p>
 					<div class="kia2lox-info-banner-actions">
 						<button class="kia2lox-btn-banner-ok" data-banner="lowbattery" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_OK")); ?></button>
 						<button class="kia2lox-btn-banner-mute" data-banner="lowbattery" type="button"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.BANNER_MUTE")); ?></button>
@@ -235,6 +235,9 @@ require "inc_header.php";
 		"records_one" => kia2lox_t("OVERVIEW.RECORDS_ONE"),
 		"records_other" => kia2lox_t("OVERVIEW.RECORDS_OTHER"),
 		"chart_no_data" => kia2lox_t("OVERVIEW.CHART_NO_DATA"),
+		"status_unplugged" => kia2lox_t("OVERVIEW.NOT_PLUGGED"),
+		"status_plugged" => kia2lox_t("OVERVIEW.PLUGGED"),
+		"status_charging" => kia2lox_t("OVERVIEW.CHARGING_NOW"),
 	]); ?>;
 </script>
 <script>
@@ -394,6 +397,22 @@ require "inc_header.php";
 		var padL = 36, padR = 12, padT = 16, padB = 28;
 		var W = 640, H = 220;
 		var innerW = W - padL - padR, innerH = H - padT - padB;
+		var AXIS_FONT_PX = 10;
+
+		// Das SVG wird per viewBox auf Kartenbreite gestreckt, daher ist
+		// "1px" im SVG nicht 1 Bildschirmpixel. Schriftgroesse anhand des
+		// tatsaechlich gerenderten Verhaeltnisses umrechnen, damit die
+		// Achsenbeschriftung so gross bleibt wie der uebrige Plugin-Text.
+		function svgScale() {
+			var rect = svg.getBoundingClientRect();
+			return rect.width > 0 ? (W / rect.width) : 1;
+		}
+		function applyAxisFontSize() {
+			var fontSize = (AXIS_FONT_PX * svgScale()).toFixed(2) + "px";
+			svg.querySelectorAll(".kia2lox-chart-axis-label").forEach(function (el) {
+				el.style.fontSize = fontSize;
+			});
+		}
 
 		var CHART_LOCALE = <?php echo json_encode(kia2lox_t("OVERVIEW.CHART_LOCALE")); ?>;
 		var WEEKDAYS = <?php echo json_encode(explode(",", kia2lox_t("OVERVIEW.WEEKDAYS"))); ?>;
@@ -432,6 +451,7 @@ require "inc_header.php";
 				var msg = svgEl("text", { x: W / 2, y: H / 2, "text-anchor": "middle", class: "kia2lox-chart-axis-label" });
 				msg.textContent = KIA2LOX_L.chart_no_data;
 				dynamic.appendChild(msg);
+				applyAxisFontSize();
 				return;
 			}
 
@@ -467,18 +487,38 @@ require "inc_header.php";
 				dynamic.appendChild(svgEl("circle", { cx: p.x, cy: p.y, r: 3, class: "kia2lox-chart-point " + pointClass }));
 			});
 
-			// X-Achsen-Beschriftung: bis zu 6 gleichmaessig verteilte Marken.
-			var tickCount = Math.min(6, points.length);
-			for (var i = 0; i < tickCount; i++) {
-				var idx = tickCount === 1 ? 0 : Math.round(i * (points.length - 1) / (tickCount - 1));
-				var p = points[idx];
-				var label = svgEl("text", {
-					x: p.x, y: H - 6, "text-anchor": "middle", class: "kia2lox-chart-axis-label"
+			// X-Achsen-Beschriftung: gleichmaessig ueber die Zeitachse verteilte
+			// Marken (nicht ueber Datenindizes - bei ungleich verteilten
+			// Messpunkten wuerden Marken sonst haeufig ueberlappen). Die
+			// Anzahl richtet sich nach der tatsaechlich gerenderten Breite,
+			// damit sich die Beschriftungen bei schmalen Karten nicht
+			// gegenseitig ueberdecken.
+			var renderedWidth = svg.getBoundingClientRect().width || W;
+			var physicalInnerWidth = innerW * (renderedWidth / W);
+			var maxTicksByWidth = Math.max(2, Math.floor(physicalInnerWidth / 65) + 1);
+			var tickCount = Math.max(1, Math.min(6, maxTicksByWidth, points.length));
+
+			if (tickCount === 1) {
+				var onlyLabel = svgEl("text", {
+					x: points[0].x, y: H - 6, "text-anchor": "middle", class: "kia2lox-chart-axis-label"
 				});
-				label.textContent = currentRange === "24h"
-					? p.date.toLocaleTimeString(CHART_LOCALE, { hour: '2-digit', minute: '2-digit' })
-					: p.date.toLocaleDateString(CHART_LOCALE, { day: '2-digit', month: '2-digit' });
-				dynamic.appendChild(label);
+				onlyLabel.textContent = currentRange === "24h"
+					? points[0].date.toLocaleTimeString(CHART_LOCALE, { hour: '2-digit', minute: '2-digit' })
+					: points[0].date.toLocaleDateString(CHART_LOCALE, { day: '2-digit', month: '2-digit' });
+				dynamic.appendChild(onlyLabel);
+			} else {
+				for (var i = 0; i < tickCount; i++) {
+					var t = i / (tickCount - 1);
+					var tickX = padL + t * innerW;
+					var tickDate = new Date(minTime + t * span);
+					var label = svgEl("text", {
+						x: tickX, y: H - 6, "text-anchor": "middle", class: "kia2lox-chart-axis-label"
+					});
+					label.textContent = currentRange === "24h"
+						? tickDate.toLocaleTimeString(CHART_LOCALE, { hour: '2-digit', minute: '2-digit' })
+						: tickDate.toLocaleDateString(CHART_LOCALE, { day: '2-digit', month: '2-digit' });
+					dynamic.appendChild(label);
+				}
 			}
 
 			// Hover: durchsichtiges Hit-Rechteck, das per Mauszeiger den
@@ -507,8 +547,16 @@ require "inc_header.php";
 				hoverPoint.setAttribute("cy", nearest.y);
 				hoverPoint.style.display = "";
 
+				var statusClass = "kia2lox-tt-dot-unplugged", statusText = KIA2LOX_L.status_unplugged;
+				if (nearest.plugged && nearest.charging) {
+					statusClass = "kia2lox-tt-dot-charging"; statusText = KIA2LOX_L.status_charging;
+				} else if (nearest.plugged) {
+					statusClass = "kia2lox-tt-dot-plugged"; statusText = KIA2LOX_L.status_plugged;
+				}
+
 				tooltip.innerHTML = "<strong>" + WEEKDAYS[nearest.date.getDay()] + ", " + fmtDate(nearest.date) + "</strong><br>"
-					+ fmtTime(nearest.date) + ": <span class=\"kia2lox-tt-value\">" + nearest.soc + "%</span>";
+					+ fmtTime(nearest.date) + ": <span class=\"kia2lox-tt-value\">" + nearest.soc + "%</span><br>"
+					+ "<span class=\"kia2lox-tt-dot " + statusClass + "\"></span>" + statusText;
 				tooltip.hidden = false;
 				var wrapRect = svg.parentElement.getBoundingClientRect();
 				var tooltipX = (nearest.x / W) * wrapRect.width;
@@ -521,6 +569,7 @@ require "inc_header.php";
 				tooltip.hidden = true;
 			});
 			dynamic.appendChild(hit);
+			applyAxisFontSize();
 		}
 
 		rangeButtons.forEach(function (btn) {
@@ -532,7 +581,21 @@ require "inc_header.php";
 			});
 		});
 
+		var resizeTimer = null;
+		window.addEventListener("resize", function () {
+			clearTimeout(resizeTimer);
+			resizeTimer = setTimeout(render, 150);
+		});
+
 		render();
+		// LoxBerry/jQuery Mobile veraendert das Seiten-Layout (Panel-Klassen,
+		// Webfont-Nachladen o.ae.) teils erst kurz nach diesem ersten Render -
+		// die Kartenbreite zum Zeitpunkt der obigen render()-Messung kann
+		// dadurch noch nicht final sein, wodurch die per svgScale()
+		// berechnete Achsenbeschriftung zu gross ausfaellt (behebt sich sonst
+		// erst beim naechsten render()-Aufruf, z.B. per Klick auf 24h/7d/30d).
+		// Nach vollstaendigem Laden (window "load") daher einmal neu zeichnen.
+		window.addEventListener("load", render);
 	})();
 </script>
 <?php require "inc_footer.php"; ?>

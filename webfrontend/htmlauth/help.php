@@ -43,6 +43,7 @@ require "inc_header.php";
 			<li><?php echo kia2lox_t("HELP.STEP_2"); ?></li>
 			<li><?php echo kia2lox_t("HELP.STEP_3"); ?></li>
 			<li><?php echo kia2lox_t("HELP.STEP_4"); ?></li>
+			<li><?php echo kia2lox_t("HELP.STEP_5"); ?></li>
 		</ol>
 		<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.MAX_VEHICLES_TEXT", ["max" => KIA2LOX_MAX_VEHICLES]); ?></p>
 	</div>

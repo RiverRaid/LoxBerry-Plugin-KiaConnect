@@ -12,6 +12,16 @@ define("KIA2LOX_FORCE_DEFAULT_TIMES", [
 	4 => ["07:00", "11:00", "15:00", "19:00"],
 ]);
 
+// Standardwerte fuer die Batteriepflege-Schwellwerte ("Warnungen"),
+// entsprechen den bisherigen fest einprogrammierten Werten aus
+// bin/kia2lox_poll.py.
+define("KIA2LOX_DEFAULT_FULL_SOC_THRESHOLD", 99);
+define("KIA2LOX_DEFAULT_FULL_HOURS", 3);
+define("KIA2LOX_DEFAULT_FULL_PARKED_HOURS", 3);
+define("KIA2LOX_DEFAULT_RECHARGE_REMINDER_DAYS", 30);
+define("KIA2LOX_DEFAULT_LOW_SOC_THRESHOLD", 10);
+define("KIA2LOX_DEFAULT_LOW_BATTERY_HOURS", 3);
+
 // Laedt die UI-Texte passend zur LoxBerry-Systemsprache (mit Fallback auf
 // Englisch fuer fehlende Schluessel), einmal pro Request.
 function kia2lox_lang() {
@@ -95,6 +105,27 @@ function kia2lox_load_vehicles() {
 		if (!array_key_exists("force_times", $v)) {
 			$v["force_times"] = KIA2LOX_FORCE_DEFAULT_TIMES[$v["force_freq"]] ?? [];
 		}
+		// Migration: Batteriepflege-Schwellwerte ("Warnungen") gab es
+		// urspruenglich nur fest im Python-Script - Fahrzeuge ohne eigene
+		// Werte bekommen die bisherigen Standardwerte.
+		if (!array_key_exists("full_soc_threshold", $v)) {
+			$v["full_soc_threshold"] = KIA2LOX_DEFAULT_FULL_SOC_THRESHOLD;
+		}
+		if (!array_key_exists("full_hours", $v)) {
+			$v["full_hours"] = KIA2LOX_DEFAULT_FULL_HOURS;
+		}
+		if (!array_key_exists("full_parked_hours", $v)) {
+			$v["full_parked_hours"] = KIA2LOX_DEFAULT_FULL_PARKED_HOURS;
+		}
+		if (!array_key_exists("recharge_reminder_days", $v)) {
+			$v["recharge_reminder_days"] = KIA2LOX_DEFAULT_RECHARGE_REMINDER_DAYS;
+		}
+		if (!array_key_exists("low_soc_threshold", $v)) {
+			$v["low_soc_threshold"] = KIA2LOX_DEFAULT_LOW_SOC_THRESHOLD;
+		}
+		if (!array_key_exists("low_battery_hours", $v)) {
+			$v["low_battery_hours"] = KIA2LOX_DEFAULT_LOW_BATTERY_HOURS;
+		}
 		// Migration: Sicherheits-Schluessel fuer die oeffentlichen
 		// HTTP-Trigger (poll.php/refresh.php). Muss stabil bleiben, sobald
 		// er einmal in Loxone hinterlegt wurde - daher sofort speichern.
@@ -176,6 +207,12 @@ function kia2lox_default_vehicle($name, $id) {
 		"passive_window_to" => "18:00",
 		"force_freq" => 0,
 		"force_times" => [],
+		"full_soc_threshold" => KIA2LOX_DEFAULT_FULL_SOC_THRESHOLD,
+		"full_hours" => KIA2LOX_DEFAULT_FULL_HOURS,
+		"full_parked_hours" => KIA2LOX_DEFAULT_FULL_PARKED_HOURS,
+		"recharge_reminder_days" => KIA2LOX_DEFAULT_RECHARGE_REMINDER_DAYS,
+		"low_soc_threshold" => KIA2LOX_DEFAULT_LOW_SOC_THRESHOLD,
+		"low_battery_hours" => KIA2LOX_DEFAULT_LOW_BATTERY_HOURS,
 		"http_key" => bin2hex(random_bytes(6)),
 	];
 }
