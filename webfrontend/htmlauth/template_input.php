@@ -49,12 +49,13 @@ $commands = <<<'XML'
 	<VirtualInUdpCmd Title="Fullparked" Comment="{{COMMENT_FULLPARKED}}" Address="" Check="FULLPARKED=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="1" DestValHigh="1" DefVal="0" MinVal="0" MaxVal="1" Unit="&lt;v&gt;" HintText="" Documentation="{{DOC_FULLPARKED}}"/>
 	<VirtualInUdpCmd Title="Recharge100" Comment="{{COMMENT_RECHARGE100}}" Address="" Check="RECHARGE100=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="1" DestValHigh="1" DefVal="0" MinVal="0" MaxVal="1" Unit="&lt;v&gt;" HintText="" Documentation="{{DOC_RECHARGE100}}"/>
 	<VirtualInUdpCmd Title="Lowbattery" Comment="{{COMMENT_LOWBATTERY}}" Address="" Check="LOWBATTERY=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="1" DestValHigh="1" DefVal="0" MinVal="0" MaxVal="1" Unit="&lt;v&gt;" HintText="" Documentation="{{DOC_LOWBATTERY}}"/>
+	<VirtualInUdpCmd Title="Error" Comment="{{COMMENT_ERROR}}" Address="" Check="ERROR=\v" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="1" DestValHigh="1" DefVal="0" MinVal="0" MaxVal="1" Unit="&lt;v&gt;" HintText="" Documentation="Triggers if the last Kia Connect polling attempt failed, reset to 0 once it succeeds again"/>
 XML;
 
 // Platzhalter statt echter PHP-Interpolation, damit das \v in den
 // Check-Attributen oben (NOWDOC) buchstaeblich erhalten bleibt.
 $commands = str_replace(
-	["{{COMMENT_SOC}}", "{{COMMENT_RANGE}}", "{{COMMENT_CHARGING}}", "{{COMMENT_PLUGGED}}", "{{COMMENT_FULL}}", "{{COMMENT_FULLPARKED}}", "{{COMMENT_RECHARGE100}}", "{{COMMENT_LOWBATTERY}}",
+	["{{COMMENT_SOC}}", "{{COMMENT_RANGE}}", "{{COMMENT_CHARGING}}", "{{COMMENT_PLUGGED}}", "{{COMMENT_FULL}}", "{{COMMENT_FULLPARKED}}", "{{COMMENT_RECHARGE100}}", "{{COMMENT_LOWBATTERY}}", "{{COMMENT_ERROR}}",
 	 "{{DOC_FULL}}", "{{DOC_FULLPARKED}}", "{{DOC_RECHARGE100}}", "{{DOC_LOWBATTERY}}"],
 	[
 		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_SOC")),
@@ -65,6 +66,7 @@ $commands = str_replace(
 		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_FULLPARKED")),
 		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_RECHARGE100")),
 		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_LOWBATTERY")),
+		kia2lox_xml_attr(kia2lox_t("TEMPLATE.COMMENT_ERROR")),
 		kia2lox_xml_attr("Triggers if the battery is charged to {$full_soc_threshold}% for more than {$full_hours} hours"),
 		kia2lox_xml_attr("Triggers if the battery is charged to {$full_soc_threshold}% for more than {$full_parked_hours} hours and the charging plug is still connected"),
 		kia2lox_xml_attr("Triggers if not fully charged for {$recharge_reminder_days} days"),

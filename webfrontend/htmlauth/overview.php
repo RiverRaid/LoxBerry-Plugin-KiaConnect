@@ -60,7 +60,7 @@ require "inc_header.php";
 		<div class="kia2lox-connect-notice">
 			<p class="kia2lox-connect-notice-title"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CONNECT_NOTICE_TITLE")); ?></p>
 			<p class="kia2lox-connect-notice-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CONNECT_NOTICE_TEXT")); ?></p>
-			<a class="kia2lox-vehicle-pill-add" href="index.php?vehicle=<?php echo urlencode($active_id); ?>"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CONNECT_NOTICE_BUTTON")); ?></a>
+			<a class="kia2lox-vehicle-pill-add" href="settings.php?vehicle=<?php echo urlencode($active_id); ?>"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.CONNECT_NOTICE_BUTTON")); ?></a>
 		</div>
 	<?php else: ?>
 
@@ -88,6 +88,21 @@ require "inc_header.php";
 			$plug_sub = kia2lox_t("OVERVIEW.NOT_CHARGING");
 		}
 		?>
+
+		<?php if ($last_poll_ok === false): ?>
+			<div class="kia2lox-info-banner kia2lox-info-banner-danger" id="kia2lox-banner-error">
+				<div class="kia2lox-info-banner-body">
+					<p class="kia2lox-info-banner-title"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.ERROR_TITLE")); ?></p>
+					<p class="kia2lox-info-banner-text"><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.ERROR_TEXT")); ?></p>
+					<p class="kia2lox-info-banner-text">
+						<strong><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.ERROR_LAST_SUCCESS_LABEL")); ?></strong>
+						<?php echo htmlspecialchars(!empty($last_values["updated_at"]) ? date("H:i", strtotime($last_values["updated_at"])) : kia2lox_t("OVERVIEW.ERROR_NEVER")); ?><br>
+						<strong><?php echo htmlspecialchars(kia2lox_t("OVERVIEW.ERROR_LAST_FAILURE_LABEL")); ?></strong>
+						<?php echo htmlspecialchars($last_poll_at ? date("H:i", strtotime($last_poll_at)) : "-"); ?>
+					</p>
+				</div>
+			</div>
+		<?php endif; ?>
 
 		<div class="kia2lox-stat-grid">
 			<div class="kia2lox-stat-card" id="kia2lox-vehicle-card" data-soc="<?php echo $soc !== null ? (int)$soc : ""; ?>">

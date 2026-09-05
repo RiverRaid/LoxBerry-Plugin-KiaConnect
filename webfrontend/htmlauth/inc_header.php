@@ -44,7 +44,7 @@ function kia2lox_page_link($file, $vehicle_id) {
 		<a class="kia2lox-tab<?php echo $kia2lox_active_tab === "overview" ? " active" : ""; ?>"
 		   href="<?php echo kia2lox_page_link("overview.php", $active_id); ?>"><?php echo htmlspecialchars(kia2lox_t("NAV.OVERVIEW")); ?></a>
 		<a class="kia2lox-tab<?php echo $kia2lox_active_tab === "settings" ? " active" : ""; ?>"
-		   href="<?php echo kia2lox_page_link("index.php", $active_id); ?>"><?php echo htmlspecialchars(kia2lox_t("NAV.SETTINGS")); ?></a>
+		   href="<?php echo kia2lox_page_link("settings.php", $active_id); ?>"><?php echo htmlspecialchars(kia2lox_t("NAV.SETTINGS")); ?></a>
 		<a class="kia2lox-tab<?php echo $kia2lox_active_tab === "log" ? " active" : ""; ?>"
 		   href="<?php echo kia2lox_page_link("log.php", $active_id); ?>"><?php echo htmlspecialchars(kia2lox_t("NAV.LOG")); ?></a>
 		<a class="kia2lox-tab<?php echo $kia2lox_active_tab === "help" ? " active" : ""; ?>"
@@ -62,7 +62,7 @@ function kia2lox_page_link($file, $vehicle_id) {
 					<?php echo htmlspecialchars($v["name"]); ?>
 				</a>
 				<?php if ($kia2lox_active_tab === "settings" && count($vehicles) > 1): ?>
-					<form method="post" action="index.php" class="kia2lox-vehicle-pill-remove-form"
+					<form method="post" action="settings.php" class="kia2lox-vehicle-pill-remove-form"
 					      onsubmit="return confirm('<?php echo htmlspecialchars(addslashes(kia2lox_t("VEHICLES.REMOVE_CONFIRM", ["name" => $v["name"]])), ENT_QUOTES); ?>');">
 						<input type="hidden" name="kia2lox_action" value="remove_vehicle">
 						<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($v["id"]); ?>">
@@ -79,7 +79,7 @@ function kia2lox_page_link($file, $vehicle_id) {
 	<?php endif; ?>
 
 	<?php if ($kia2lox_active_tab === "settings"): ?>
-	<form method="post" action="index.php" id="kia2lox-add-vehicle-form" style="display:none;">
+	<form method="post" action="settings.php" id="kia2lox-add-vehicle-form" style="display:none;">
 		<input type="hidden" name="kia2lox_action" value="add_vehicle">
 		<input type="hidden" name="new_vehicle_name" id="kia2lox-new-vehicle-name">
 	</form>

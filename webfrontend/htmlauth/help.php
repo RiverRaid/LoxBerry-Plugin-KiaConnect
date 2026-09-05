@@ -74,6 +74,7 @@ require "inc_header.php";
 					<tr><td><code>FULLPARKED</code></td><td><?php echo htmlspecialchars(kia2lox_t("HELP.ROW_FULLPARKED")); ?></td></tr>
 					<tr><td><code>RECHARGE100</code></td><td><?php echo htmlspecialchars(kia2lox_t("HELP.ROW_RECHARGE100")); ?></td></tr>
 					<tr><td><code>LOWBATTERY</code></td><td><?php echo htmlspecialchars(kia2lox_t("HELP.ROW_LOWBATTERY")); ?></td></tr>
+					<tr><td><code>ERROR</code></td><td><?php echo htmlspecialchars(kia2lox_t("HELP.ROW_ERROR")); ?></td></tr>
 				</tbody>
 			</table>
 		</div>

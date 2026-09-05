@@ -22,6 +22,17 @@ define("KIA2LOX_DEFAULT_RECHARGE_REMINDER_DAYS", 30);
 define("KIA2LOX_DEFAULT_LOW_SOC_THRESHOLD", 10);
 define("KIA2LOX_DEFAULT_LOW_BATTERY_HOURS", 3);
 
+// LoxBerrys eigene Log-Level-Werte fuer die Pluginverwaltung (siehe
+// loglevel_select_html() in loxberry_web.php - bewusst nicht durchgehend
+// 0-7, sondern genau diese fuenf): 0=Aus, 3=Fehler, 4=Warnung, 6=Info,
+// 7=Debug. Muss synchron zu den gleichnamigen Konstanten in
+// bin/kia2lox_poll.py bleiben.
+define("KIA2LOX_LOGLEVEL_OFF", 0);
+define("KIA2LOX_LOGLEVEL_ERROR", 3);
+define("KIA2LOX_LOGLEVEL_WARNING", 4);
+define("KIA2LOX_LOGLEVEL_INFO", 6);
+define("KIA2LOX_LOGLEVEL_DEBUG", 7);
+
 // Laedt die UI-Texte passend zur LoxBerry-Systemsprache (mit Fallback auf
 // Englisch fuer fehlende Schluessel), einmal pro Request.
 function kia2lox_lang() {
@@ -41,6 +52,30 @@ function kia2lox_t($key, $vars = []) {
 		$text = str_replace("{" . $name . "}", $value, $text);
 	}
 	return $text;
+}
+
+// Liest den in der LoxBerry-Pluginverwaltung fuer dieses Plugin
+// eingestellten Log-Level. Faellt auf KIA2LOX_LOGLEVEL_INFO zurueck, falls
+// nicht ermittelbar - passend zum Fallback in
+// bin/kia2lox_poll.py::load_loglevel().
+function kia2lox_current_loglevel() {
+	$plugin = LBSystem::plugindata();
+	if (isset($plugin["PLUGINDB_LOGLEVEL"]) && $plugin["PLUGINDB_LOGLEVEL"] !== null && $plugin["PLUGINDB_LOGLEVEL"] !== "") {
+		return (int)$plugin["PLUGINDB_LOGLEVEL"];
+	}
+	return KIA2LOX_LOGLEVEL_INFO;
+}
+
+// Menschenlesbares Label fuer die Log-Seite, z.B. "Log (Fehler)".
+function kia2lox_loglevel_label($level) {
+	switch ((int)$level) {
+		case KIA2LOX_LOGLEVEL_OFF: return kia2lox_t("LOG.LEVEL_OFF");
+		case KIA2LOX_LOGLEVEL_ERROR: return kia2lox_t("LOG.LEVEL_ERROR");
+		case KIA2LOX_LOGLEVEL_WARNING: return kia2lox_t("LOG.LEVEL_WARNING");
+		case KIA2LOX_LOGLEVEL_INFO: return kia2lox_t("LOG.LEVEL_INFO");
+		case KIA2LOX_LOGLEVEL_DEBUG: return kia2lox_t("LOG.LEVEL_DEBUG");
+		default: return kia2lox_t("LOG.LEVEL_UNKNOWN", ["level" => $level]);
+	}
 }
 
 function kia2lox_config_path() {
@@ -125,6 +160,9 @@ function kia2lox_load_vehicles() {
 		}
 		if (!array_key_exists("low_battery_hours", $v)) {
 			$v["low_battery_hours"] = KIA2LOX_DEFAULT_LOW_BATTERY_HOURS;
+		}
+		if (!array_key_exists("stale_auto_refresh_enabled", $v)) {
+			$v["stale_auto_refresh_enabled"] = true;
 		}
 		// Migration: Sicherheits-Schluessel fuer die oeffentlichen
 		// HTTP-Trigger (poll.php/refresh.php). Muss stabil bleiben, sobald
@@ -213,6 +251,7 @@ function kia2lox_default_vehicle($name, $id) {
 		"recharge_reminder_days" => KIA2LOX_DEFAULT_RECHARGE_REMINDER_DAYS,
 		"low_soc_threshold" => KIA2LOX_DEFAULT_LOW_SOC_THRESHOLD,
 		"low_battery_hours" => KIA2LOX_DEFAULT_LOW_BATTERY_HOURS,
+		"stale_auto_refresh_enabled" => true,
 		"http_key" => bin2hex(random_bytes(6)),
 	];
 }
@@ -267,9 +306,13 @@ function kia2lox_load_history($vehicle_id) {
 }
 
 // Naechste geplante passive Abfrage als "HH:MM" fuer die Uebersicht.
-// Bei Intervall-Modus: naechster Slot innerhalb des heutigen Zeitfensters,
-// sonst der Beginn des Fensters morgen. Bei Individuell: naechste
-// konfigurierte Uhrzeit (heute oder morgen die erste). "Nie" -> null.
+// Bei Intervall-Modus: naechster Punkt im festen Raster aus
+// Zeitfenster-Beginn und Intervall (z.B. Fenster 08:00-16:00, Intervall 2h
+// -> 08:00, 10:00, 12:00, 14:00, 16:00) - entspricht damit genau der echten
+// Logik in bin/kia2lox_poll.py::should_poll_passive_now(). Das Raster
+// haengt bewusst nicht davon ab, wann zuletzt (auch manuell/per
+// HTTP-Trigger) abgefragt wurde. Bei Individuell: naechste konfigurierte
+// Uhrzeit (heute oder morgen die erste). "Nie" -> null.
 function kia2lox_next_passive_time($vehicle, $now_hm) {
 	$mode = $vehicle["passive_mode"] ?? "interval";
 	if ($mode === "never") {

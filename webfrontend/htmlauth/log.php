@@ -55,6 +55,9 @@ if ($log_total > $max_lines) {
 }
 $log_display = implode("\n", $log_lines);
 
+$loglevel = kia2lox_current_loglevel();
+$logging_disabled = $loglevel === KIA2LOX_LOGLEVEL_OFF;
+
 LBWeb::lbheader("Kia2Lox", "https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect", "help.html");
 $kia2lox_active_tab = "log";
 require "inc_header.php";
@@ -63,7 +66,7 @@ require "inc_header.php";
 	<div class="kia2lox-card">
 		<div class="kia2lox-card-head">
 			<div>
-				<h2><?php echo htmlspecialchars(kia2lox_t("LOG.TITLE")); ?></h2>
+				<h2><?php echo htmlspecialchars(kia2lox_t("LOG.TITLE")); ?> (<?php echo htmlspecialchars(kia2lox_loglevel_label($loglevel)); ?>)</h2>
 				<p class="kia2lox-desc">
 					<?php echo htmlspecialchars(kia2lox_t("LOG.DESC")); ?>
 					<?php if ($log_total > $max_lines): ?>
@@ -82,7 +85,9 @@ require "inc_header.php";
 			</div>
 		</div>
 
-		<?php if (!$log_exists || trim($log_display) === ""): ?>
+		<?php if ($logging_disabled): ?>
+			<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("LOG.DISABLED_HINT")); ?></p>
+		<?php elseif (!$log_exists || trim($log_display) === ""): ?>
 			<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("LOG.EMPTY_HINT")); ?></p>
 		<?php else: ?>
 			<pre class="kia2lox-log-box" id="kia2lox-log-box"><?php echo htmlspecialchars($log_display); ?></pre>

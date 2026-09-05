@@ -406,13 +406,13 @@ body { background: var(--bg); }
    spezifischer als ein einfaches ".kia2lox-field input", daher
    gewinnt sonst LoxBerry trotz !important und spaeterem Laden
    unserer CSS-Datei (Spezifitaet zaehlt vor Reihenfolge). */
-.kia2lox-page .kia2lox-field input,
+.kia2lox-page .kia2lox-field input:not([type="checkbox"]),
 .kia2lox-page .kia2lox-field select,
-.kia2lox-page .kia2lox-field input.ui-body-a,
+.kia2lox-page .kia2lox-field input.ui-body-a:not([type="checkbox"]),
 .kia2lox-page .kia2lox-field select.ui-body-a,
-.kia2lox-page .kia2lox-field input.ui-focus,
+.kia2lox-page .kia2lox-field input.ui-focus:not([type="checkbox"]),
 .kia2lox-page .kia2lox-field select.ui-focus,
-.kia2lox-page .kia2lox-field input.ui-btn-a,
+.kia2lox-page .kia2lox-field input.ui-btn-a:not([type="checkbox"]),
 .kia2lox-page .kia2lox-field select.ui-btn-a {
 	box-sizing: border-box !important;
 	font-family: inherit;
@@ -940,6 +940,14 @@ table.kia2lox-schedule tr:last-child td { border-bottom: none; }
 	border-radius: 12px;
 	padding: 16px 18px;
 	margin-bottom: 18px;
+}
+/* Fehler-Banner (Kia-Connect-Verbindung fehlgeschlagen) - rot statt gelb,
+   und ohne die "Verstanden"/"Nicht mehr anzeigen"-Aktionen der
+   Batteriepflege-Hinweise, da es sich automatisch aufloest, sobald wieder
+   ein Abruf gelingt. */
+.kia2lox-info-banner-danger {
+	background: var(--danger-bg);
+	border-color: var(--danger-border);
 }
 .kia2lox-info-banner-title {
 	margin: 0 0 4px;

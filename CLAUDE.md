@@ -78,8 +78,28 @@ in lockstep:
   pruned to `HISTORY_RETENTION_DAYS`). Computes 4 battery-health flags
   (`FULL`, `FULLPARKED`, `RECHARGE100`, `LOWBATTERY`) from per-vehicle
   configurable thresholds, with hardcoded `DEFAULT_*` fallbacks for
-  vehicles that predate that setting. Logs using LoxBerry's own log-level
+  vehicles that predate that setting. Each flag is additionally suppressed
+  (`update_battery_health_state()`) while `kia_last_updated_at` (the
+  timestamp Kia Connect itself last updated the vehicle's data, as opposed
+  to when we last polled) is older than that flag's own configured
+  duration — a passive poll only reads Kia's cached state, which can be
+  stale for longer than the warning threshold itself. When that happens
+  and the vehicle's `stale_auto_refresh_enabled` setting (default on) is
+  set, `main()` triggers a one-time out-of-schedule Force-Refresh via
+  `stale_warning_needs_refresh()`, independent of the vehicle's own
+  passive/force schedule; `vstate["stale_warning_pending"]` tracks this so
+  the refresh fires only once per stale episode, resetting once fresh data
+  arrives or the underlying condition clears. A 5th UDP output, `ERROR`,
+  is sent after every poll attempt (from `main()`, not
+  `update_battery_health_state()`, since it must also fire when
+  `poll_vehicle_config()` never got far enough to compute the other four
+  flags) — `1` on any failed attempt, reset to `0` on the next success;
+  `overview.php` shows a matching red banner (no dismiss button, unlike
+  the battery-health banners) driven by the same `vstate["last_poll_ok"]`
+  flag. Logs using LoxBerry's own log-level
   convention (`<OK>`/`<INFO>`/`<WARNING>`/`<ERROR>`/`<CRITICAL>` tags,
+  mapped onto LoxBerry's actual 5 selectable levels — Off/Errors/Warning/Info/Debug,
+  values 0/3/4/6/7, not a contiguous 0-7 range — via `TAG_LOG_LEVELS`,
   filtered by the level set in LoxBerry's plugin management) — but an
   explicit `--vehicle` run always logs everything regardless of level, so
   the PHP caller can reliably detect failure via the `<ERROR>`/`<CRITICAL>`
@@ -108,18 +128,22 @@ in lockstep:
   `proc_open()`, computing the next scheduled poll time
   (`kia2lox_next_passive_time()`), and the `kia2lox_t()` translation helper.
 - `inc_header.php` / `inc_footer.php` are `require`d (not included as
-  functions) by every authenticated page (`index.php`, `overview.php`,
+  functions) by every authenticated page (`settings.php`, `overview.php`,
   `log.php`, `help.php`) and expect specific variables to already be set by
   the caller (`$version`, `$vehicles`, `$active_id`, `$kia2lox_active_tab`).
   They render the shared hero/tabs/vehicle-picker chrome; the calling page
   must close the `</div></div>` wrapper opened in the header before
   `require`ing the footer.
-- `index.php` (the Settings page) handles all POST actions
-  (`add_vehicle`, `remove_vehicle`, `save_credentials`, `save_miniserver`,
-  `save_interval`, `save_warnings`, `manual_refresh`) and answers AJAX saves
-  with JSON via `kia2lox_json_response()` — note the `ob_start()` output
-  buffering wrapping the whole POST handling block, needed so a stray
-  PHP notice/warning can't corrupt the JSON response.
+- `index.php` is just a redirect to `overview.php` (preserving `?vehicle=`)
+  — LoxBerry's plugin menu always links to `index.php` by framework
+  convention, so this is what makes the plugin land on the Overview tab
+  instead of Settings when opened from the menu.
+- `settings.php` (the Settings page, formerly `index.php`) handles all POST
+  actions (`add_vehicle`, `remove_vehicle`, `save_credentials`,
+  `save_miniserver`, `save_interval`, `save_warnings`, `manual_refresh`) and
+  answers AJAX saves with JSON via `kia2lox_json_response()` — note the
+  `ob_start()` output buffering wrapping the whole POST handling block,
+  needed so a stray PHP notice/warning can't corrupt the JSON response.
 - `webfrontend/html/poll.php` and `refresh.php` are **unauthenticated**
   public HTTP endpoints (separate from `htmlauth/`) meant to be called by a
   Loxone virtual output — protected instead by a per-vehicle random
