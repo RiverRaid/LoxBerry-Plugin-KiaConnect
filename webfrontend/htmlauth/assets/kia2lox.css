@@ -468,13 +468,6 @@ body { background: var(--bg); }
 	box-shadow: none !important;
 }
 
-.kia2lox-inline-form {
-	display: flex;
-	align-items: flex-end;
-	gap: 10px;
-	flex-wrap: wrap;
-}
-
 .kia2lox-btn {
 	appearance: none !important;
 	border: none !important;
@@ -497,20 +490,6 @@ body { background: var(--bg); }
 	color: var(--btn-disabled-text) !important;
 	cursor: not-allowed;
 	filter: none;
-}
-.kia2lox-btn-secondary {
-	appearance: none !important;
-	border: 1px solid var(--accent) !important;
-	background: transparent !important;
-	color: var(--accent-strong) !important;
-	font-family: inherit;
-	font-size: 13px;
-	font-weight: 600;
-	border-radius: 7px !important;
-	padding: 8px 14px !important;
-	margin: 0 !important;
-	box-shadow: none !important;
-	cursor: pointer;
 }
 .kia2lox-btn-danger {
 	appearance: none !important;
@@ -580,12 +559,6 @@ body { background: var(--bg); }
 }
 .kia2lox-collapse-body {
 	margin-top: 4px;
-}
-.kia2lox-refresh-form {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	flex-wrap: wrap;
 }
 .kia2lox-log-actions { display: flex; align-items: center; gap: 8px; }
 
