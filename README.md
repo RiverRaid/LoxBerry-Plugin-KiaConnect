@@ -32,9 +32,9 @@ library by Fuat Akgun (MIT license) — this plugin would not exist without it.
 
 ## Screenshots
 
-| Overview | Settings | 
-|---|---|
-| ![Overview](docs/screenshot-overview.png) | ![Settings](docs/screenshot-settings.png) |
+| Overview | Settings | Settings (Intervals & Templates) |
+|---|---|---|
+| ![Overview](docs/screenshot-overview.png) | ![Settings](docs/screenshot-settings.png) | ![Settings (Intervals & Templates)](docs/screenshot-settings-2.png) |
 
 ## Installation
 
