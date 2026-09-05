@@ -11,10 +11,10 @@ Kia2Lox fragt regelmäßig den Ladezustand eines oder mehrerer E-Fahrzeuge über
   * **Bis zu 4 Fahrzeuge** – jedes mit eigenem Kia-Connect-Konto, Miniserver-Ziel und Zeitplan.
   * **Passives Polling** – liest den zuletzt von Kia Connect zwischengespeicherten Zustand in einem einstellbaren Intervall (30–240 Minuten), optional mit Zeitfenster oder festen Uhrzeiten – weckt das Fahrzeug dabei nicht auf.
   * **Force-Refresh** – weckt das Fahrzeug aktiv für einen frischen Wert, 0–4× täglich zu festen Zeiten oder auf Abruf (Button / HTTP-Trigger).
-  * **8 Werte pro Fahrzeug** per UDP: `SOC`, `RANGE`, `CHARGING`, `PLUGGED`, `FULL`, `FULLPARKED`, `RECHARGE100`, `LOWBATTERY` – die letzten vier sind unabhängige Batterie-Warnungen (voll geladen, voll geladen *und* am Lader untätig, lange nicht vollgeladen, niedriger Akku und nicht ladend), deren Schwellwerte in der einklappbaren „Warnungen"-Box je Fahrzeug einstellbar sind (Standard: 99 %, 3 Std., 3 Std., 30 Tage, 10 %, 3 Std.).
+  * **9 Werte pro Fahrzeug** per UDP: `SOC`, `RANGE`, `CHARGING`, `PLUGGED`, `FULL`, `FULLPARKED`, `RECHARGE100`, `LOWBATTERY`, `ERROR` – die vier Batterie-Warnungen (voll geladen, voll geladen *und* am Lader untätig, lange nicht vollgeladen, niedriger Akku und nicht ladend) haben je Fahrzeug einstellbare Schwellwerte in der einklappbaren „Warnungen"-Box (Standard: 99 %, 3 Std., 3 Std., 30 Tage, 10 %, 3 Std.) und werden automatisch unterdrückt, solange die zugrunde liegenden Kia-Connect-Daten selbst älter als der jeweilige Schwellwert sind – optional mit einmaligem automatischem Force-Refresh, um wieder aktuelle Daten zu holen. `ERROR` meldet einen fehlgeschlagenen Abrufversuch und wird beim nächsten Erfolg wieder zurückgesetzt.
   * **Öffentliche HTTP-Endpunkte** (`poll.php` / `refresh.php`, je Fahrzeug schlüsselgeschützt), um eine Abfrage direkt aus einem virtuellen Loxone-Ausgang auszulösen.
   * **Fertige Loxone-Config-Importvorlagen** für den virtuellen UDP-Eingang und -Ausgang, mit passender Adresse, Port und Schlüssel vorausgefüllt.
-  * **Übersichtsseite** mit Live-Statuskarten (Ladestand, Steck-/Ladezustand, letzte/nächste Abfrage, Erreichbarkeit des Miniservers) und einem Ladeverlaufs-Diagramm.
+  * **Übersichtsseite** (Startseite des Plugins) mit Live-Statuskarten (Ladestand, Steck-/Ladezustand, letzte/nächste Abfrage, Erreichbarkeit des Miniservers), einem Ladeverlaufs-Diagramm und einem Fehler-Hinweis, falls der letzte Kia-Connect-Abruf fehlgeschlagen ist.
   * **Log-Seite** und integrierte Hilfeseite.
 
 ===== Screenshots =====
@@ -35,7 +35,7 @@ Kia2Lox fragt regelmäßig den Ladezustand eines oder mehrerer E-Fahrzeuge über
 
 LoxBerry → **Konfiguration → Plugins → Plugin hinzufügen** → Plugin per ZIP-URL installieren:
 
-  https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.7.5.zip
+  https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.8.0.zip
 
 Alternativ die ZIP-Datei herunterladen und über „Plugin-Archiv hochladen" installieren. Das Plugin richtet bei der Installation eine eigene, portable Python-3.12-Umgebung ein und ist damit unabhängig von der System-Python-Version des LoxBerrys.
 
@@ -53,6 +53,6 @@ Die Abfrage läuft ausschließlich zwischen LoxBerry, der Kia-Connect-Cloud und 
 ===== Links =====
 
   * **Vollständige Doku & Quellcode:** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect|GitHub: RiverRaid/LoxBerry-Plugin-KiaConnect]]
-  * **Download (ZIP):** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.7.5.zip|kia2lox 0.7.5.zip]]
+  * **Download (ZIP):** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.8.0.zip|kia2lox 0.8.0.zip]]
   * **Basis-Bibliothek:** [[https://github.com/Hyundai-Kia-Connect/hyundai_kia_connect_api|hyundai_kia_connect_api]] von Fuat Akgun (MIT-Lizenz) – ohne sie gäbe es dieses Plugin nicht.
   * **Support/Fragen:** GitHub-Issues
