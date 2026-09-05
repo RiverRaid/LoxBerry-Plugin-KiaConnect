@@ -17,17 +17,22 @@ library by Fuat Akgun (MIT license) — this plugin would not exist without it.
   of individual times — doesn't wake up the car
 - **Force-refresh**: actively wakes the car for a fresh reading, 0–4× daily at
   fixed times, or on demand (button / HTTP trigger)
-- Sends 8 values per vehicle via UDP: `SOC`, `RANGE`, `CHARGING`, `PLUGGED`,
-  `FULL`, `FULLPARKED`, `RECHARGE100`, `LOWBATTERY` — the last three are
-  independent battery-health warnings (fully charged for 3h+, fully charged
-  *and* idle on the charger for 3h+, not fully charged in 30 days, below 10%
-  and not charging for 3h+)
+- Sends 9 values per vehicle via UDP: `SOC`, `RANGE`, `CHARGING`, `PLUGGED`,
+  `FULL`, `FULLPARKED`, `RECHARGE100`, `LOWBATTERY`, `ERROR`. The four
+  battery-health warnings (fully charged for 3h+, fully charged *and* idle
+  on the charger for 3h+, not fully charged in 30 days, below 10% and not
+  charging for 3h+) are automatically suppressed while the underlying Kia
+  Connect data itself is older than that warning's own threshold, with an
+  optional one-time automatic Force-Refresh to fetch current data.
+  `ERROR` turns on when a poll to Kia Connect fails and clears again on the
+  next successful poll
 - Public HTTP endpoints (`poll.php` / `refresh.php`, key-protected per
   vehicle) to trigger a poll directly from a Loxone virtual output
 - Ready-made Loxone Config import templates for the virtual UDP input and
   virtual output, pre-filled with the right address, port and key
-- Overview page with live status cards (charge level, plug/charging state,
-  last/next poll, Miniserver reachability) and a charge-history chart
+- Overview page (the plugin's landing page) with live status cards (charge
+  level, plug/charging state, last/next poll, Miniserver reachability), a
+  charge-history chart, and a banner if the last Kia Connect poll failed
 - Log page and an in-app help page
 
 ## Screenshots
