@@ -1,0 +1,57 @@
+====== Kia2Lox ======
+
+**Ladezustand von Kia-E-Fahrzeugen für Loxone.**
+
+Kia2Lox fragt regelmäßig den Ladezustand eines oder mehrerer E-Fahrzeuge über die (inoffizielle) Kia-Connect-Schnittstelle ab und schickt die Werte per UDP an einen Loxone Miniserver. Eingerichtet wird alles im Browser – **ohne Programmierung**; passende Loxone-Config-Importvorlagen für virtuellen Ein- und Ausgang liegen bei.
+
+{{https://raw.githubusercontent.com/RiverRaid/LoxBerry-Plugin-KiaConnect/main/docs/screenshot-overview.png?700|Kia2Lox Übersicht}}
+
+===== Funktionen =====
+
+  * **Bis zu 4 Fahrzeuge** – jedes mit eigenem Kia-Connect-Konto, Miniserver-Ziel und Zeitplan.
+  * **Passives Polling** – liest den zuletzt von Kia Connect zwischengespeicherten Zustand in einem einstellbaren Intervall (30–240 Minuten), optional mit Zeitfenster oder festen Uhrzeiten – weckt das Fahrzeug dabei nicht auf.
+  * **Force-Refresh** – weckt das Fahrzeug aktiv für einen frischen Wert, 0–4× täglich zu festen Zeiten oder auf Abruf (Button / HTTP-Trigger).
+  * **8 Werte pro Fahrzeug** per UDP: `SOC`, `RANGE`, `CHARGING`, `PLUGGED`, `FULL`, `FULLPARKED`, `RECHARGE100`, `LOWBATTERY` – letztere drei sind unabhängige Batterie-Warnungen (seit 3h+ voll geladen, seit 3h+ voll geladen *und* am Lader untätig, seit 30 Tagen nicht vollgeladen, unter 10 % und seit 3h+ nicht ladend).
+  * **Öffentliche HTTP-Endpunkte** (`poll.php` / `refresh.php`, je Fahrzeug schlüsselgeschützt), um eine Abfrage direkt aus einem virtuellen Loxone-Ausgang auszulösen.
+  * **Fertige Loxone-Config-Importvorlagen** für den virtuellen UDP-Eingang und -Ausgang, mit passender Adresse, Port und Schlüssel vorausgefüllt.
+  * **Übersichtsseite** mit Live-Statuskarten (Ladestand, Steck-/Ladezustand, letzte/nächste Abfrage, Erreichbarkeit des Miniservers) und einem Ladeverlaufs-Diagramm.
+  * **Log-Seite** und integrierte Hilfeseite.
+
+===== Screenshots =====
+
+**Übersicht** – Statuskarten und Ladeverlauf je Fahrzeug:
+
+{{https://raw.githubusercontent.com/RiverRaid/LoxBerry-Plugin-KiaConnect/main/docs/screenshot-overview.png?700|Übersicht}}
+
+**Einstellungen** – Fahrzeuge, Zeitpläne und Miniserver-Ziel konfigurieren:
+
+{{https://raw.githubusercontent.com/RiverRaid/LoxBerry-Plugin-KiaConnect/main/docs/screenshot-settings.png?700|Einstellungen}}
+
+**Einstellungen (Intervalle & Vorlagen)** – Abfrage-Intervall, HTTP-Befehle und Loxone-Vorlagen:
+
+{{https://raw.githubusercontent.com/RiverRaid/LoxBerry-Plugin-KiaConnect/main/docs/screenshot-settings-2.png?700|Einstellungen (Intervalle & Vorlagen)}}
+
+===== Installation =====
+
+LoxBerry → **Konfiguration → Plugins → Plugin hinzufügen** → Plugin per ZIP-URL installieren:
+
+  https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.7.4.zip
+
+Alternativ die ZIP-Datei herunterladen und über „Plugin-Archiv hochladen" installieren. Das Plugin richtet bei der Installation eine eigene, portable Python-3.12-Umgebung ein und ist damit unabhängig von der System-Python-Version des LoxBerrys.
+
+===== Konfiguration =====
+
+  - **Fahrzeug anlegen** – unter „Einstellungen" ein Fahrzeug hinzufügen und die gleichen Zugangsdaten wie in der Kia-Connect-App eintragen.
+  - **Miniserver wählen** – Zielserver sowie Abfrage-Intervall bzw. Zeitplan (passiv/aktiv) je Fahrzeug festlegen.
+  - **Loxone-Config einrichten** – die mitgelieferten Importvorlagen für virtuellen Ein- und Ausgang einspielen; Adresse, Port und Schlüssel sind bereits passend vorausgefüllt.
+
+===== Datenschutz =====
+
+Die Abfrage läuft ausschließlich zwischen LoxBerry, der Kia-Connect-Cloud und dem eigenen Miniserver. Zugangsdaten und Zustandswerte verlassen diesen Weg nicht; es gibt keine eigene Cloud-Anbindung des Plugins und keine Telemetrie.
+
+===== Links =====
+
+  * **Vollständige Doku & Quellcode:** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect|GitHub: RiverRaid/LoxBerry-Plugin-KiaConnect]]
+  * **Download (ZIP):** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.7.4.zip|kia2lox 0.7.4.zip]]
+  * **Basis-Bibliothek:** [[https://github.com/Hyundai-Kia-Connect/hyundai_kia_connect_api|hyundai_kia_connect_api]] von Fuat Akgun (MIT-Lizenz) – ohne sie gäbe es dieses Plugin nicht.
+  * **Support/Fragen:** GitHub-Issues
