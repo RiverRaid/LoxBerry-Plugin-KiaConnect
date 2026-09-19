@@ -10,8 +10,8 @@ library by Fuat Akgun (MIT license) — this plugin would not exist without it.
 
 ## Features
 
-- Supports up to 4 vehicles, each with its own Kia Connect account, Miniserver
-  target and schedule
+- Supports up to 4 vehicles, each with its own brand (Kia or Hyundai), Connect
+  account, Miniserver target and schedule
 - **Passive polling**: reads the last state Kia Connect has cached, on a
   configurable interval (30–240 minutes), an optional time window, or a list
   of individual times — doesn't wake up the car
@@ -47,7 +47,7 @@ In the LoxBerry web interface, go to **Configuration → Plugins → Add plugin*
 and enter this ZIP URL:
 
 ```
-https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.8.0.zip
+https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.8.1.zip
 ```
 
 Alternatively, download that ZIP manually and install it via the "Upload
@@ -55,8 +55,9 @@ plugin archive" option. The plugin sets up its own portable Python 3.12
 environment during installation, so it doesn't depend on the LoxBerry
 system's Python version.
 
-Once installed, open the plugin, add a vehicle under **Settings**, enter the
-same credentials used in the Kia Connect app, and pick a Miniserver.
+Once installed, open the plugin, add a vehicle under **Settings**, choose its
+brand (Kia or Hyundai), enter the same credentials used in that brand's
+Connect app, and pick a Miniserver.
 
 ## Development
 

@@ -1,14 +1,14 @@
 ====== Kia2Lox ======
 
-**Ladezustand von Kia-E-Fahrzeugen für Loxone.**
+**Ladezustand von Kia- und Hyundai-E-Fahrzeugen für Loxone.**
 
-Kia2Lox fragt regelmäßig den Ladezustand eines oder mehrerer E-Fahrzeuge über die (inoffizielle) Kia-Connect-Schnittstelle ab und schickt die Werte per UDP an einen Loxone Miniserver. Eingerichtet wird alles im Browser – **ohne Programmierung**; passende Loxone-Config-Importvorlagen für virtuellen Ein- und Ausgang liegen bei.
+Kia2Lox fragt regelmäßig den Ladezustand eines oder mehrerer E-Fahrzeuge über die (inoffizielle) Kia/Hyundai-Connect-Schnittstelle ab und schickt die Werte per UDP an einen Loxone Miniserver. Eingerichtet wird alles im Browser – **ohne Programmierung**; passende Loxone-Config-Importvorlagen für virtuellen Ein- und Ausgang liegen bei.
 
 {{https://raw.githubusercontent.com/RiverRaid/LoxBerry-Plugin-KiaConnect/main/docs/screenshot-overview.png?700|Kia2Lox Übersicht}}
 
 ===== Funktionen =====
 
-  * **Bis zu 4 Fahrzeuge** – jedes mit eigenem Kia-Connect-Konto, Miniserver-Ziel und Zeitplan.
+  * **Bis zu 4 Fahrzeuge** – jedes mit eigener Marke (Kia oder Hyundai), eigenem Connect-Konto, Miniserver-Ziel und Zeitplan.
   * **Passives Polling** – liest den zuletzt von Kia Connect zwischengespeicherten Zustand in einem einstellbaren Intervall (30–240 Minuten), optional mit Zeitfenster oder festen Uhrzeiten – weckt das Fahrzeug dabei nicht auf.
   * **Force-Refresh** – weckt das Fahrzeug aktiv für einen frischen Wert, 0–4× täglich zu festen Zeiten oder auf Abruf (Button / HTTP-Trigger).
   * **9 Werte pro Fahrzeug** per UDP: `SOC`, `RANGE`, `CHARGING`, `PLUGGED`, `FULL`, `FULLPARKED`, `RECHARGE100`, `LOWBATTERY`, `ERROR` – die vier Batterie-Warnungen (voll geladen, voll geladen *und* am Lader untätig, lange nicht vollgeladen, niedriger Akku und nicht ladend) haben je Fahrzeug einstellbare Schwellwerte in der einklappbaren „Warnungen"-Box (Standard: 99 %, 3 Std., 3 Std., 30 Tage, 10 %, 3 Std.) und werden automatisch unterdrückt, solange die zugrunde liegenden Kia-Connect-Daten selbst älter als der jeweilige Schwellwert sind – optional mit einmaligem automatischem Force-Refresh, um wieder aktuelle Daten zu holen. `ERROR` meldet einen fehlgeschlagenen Abrufversuch und wird beim nächsten Erfolg wieder zurückgesetzt.
@@ -41,14 +41,14 @@ Alternativ die ZIP-Datei herunterladen und über „Plugin-Archiv hochladen" ins
 
 ===== Konfiguration =====
 
-  - **Fahrzeug anlegen** – unter „Einstellungen" ein Fahrzeug hinzufügen und die gleichen Zugangsdaten wie in der Kia-Connect-App eintragen.
+  - **Fahrzeug anlegen** – unter „Einstellungen" ein Fahrzeug hinzufügen, die Marke (Kia oder Hyundai) wählen und die gleichen Zugangsdaten wie in der jeweiligen Connect-App eintragen.
   - **Miniserver wählen** – Zielserver sowie Abfrage-Intervall bzw. Zeitplan (passiv/aktiv) je Fahrzeug festlegen.
   - **Loxone-Config einrichten** – die mitgelieferten Importvorlagen für virtuellen Ein- und Ausgang einspielen; Adresse, Port und Schlüssel sind bereits passend vorausgefüllt.
   - **Warnungen anpassen (optional)** – in der einklappbaren „Warnungen"-Box die Schwellwerte für die Batteriepflege-Hinweise (voll, Zellausgleich, niedriger Akku) je Fahrzeug ändern; die Standardwerte sind bereits sinnvoll voreingestellt.
 
 ===== Datenschutz =====
 
-Die Abfrage läuft ausschließlich zwischen LoxBerry, der Kia-Connect-Cloud und dem eigenen Miniserver. Zugangsdaten und Zustandswerte verlassen diesen Weg nicht; es gibt keine eigene Cloud-Anbindung des Plugins und keine Telemetrie.
+Die Abfrage läuft ausschließlich zwischen LoxBerry, der Kia/Hyundai-Connect-Cloud und dem eigenen Miniserver. Zugangsdaten und Zustandswerte verlassen diesen Weg nicht; es gibt keine eigene Cloud-Anbindung des Plugins und keine Telemetrie.
 
 ===== Links =====
 
