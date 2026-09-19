@@ -17,3 +17,6 @@ Thumbs.db
 
 #Eigene ToDo-Dateien
 TODO.md
+
+# Lokal gebaute Release-ZIPs (dist/)
+dist/
