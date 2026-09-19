@@ -113,6 +113,11 @@ function kia2lox_load_vehicles() {
 		if (!array_key_exists("kia_connected", $v)) {
 			$v["kia_connected"] = !empty($v["kia_username"]) && !empty($v["kia_password"]);
 		}
+		// Migration: Fahrzeuge aus einer Zeit vor der Marken-Auswahl liefen
+		// alle ueber Kia Connect.
+		if (!array_key_exists("brand", $v)) {
+			$v["brand"] = "kia";
+		}
 		// Migration: Fahrzeuge aus einer Zeit vor den Intervall-Einstellungen
 		// (und aus der ersten, noch unvollstaendigen Fassung davon) bekommen
 		// die Kia2Lox-Standardwerte.
@@ -230,6 +235,7 @@ function kia2lox_default_vehicle($name, $id) {
 	return [
 		"id" => $id,
 		"name" => $name,
+		"brand" => "kia",
 		"kia_username" => "",
 		"kia_password" => "",
 		"kia_pin" => "",
@@ -393,7 +399,7 @@ function kia2lox_ping_miniserver($ip, $timeout = 1.5) {
 // ohne sie zu speichern. Ruft dazu das Python-Script in der Plugin-eigenen
 // venv auf und uebergibt die Zugangsdaten ueber STDIN (nicht als
 // Kommandozeilen-Argument, damit sie nicht in der Prozessliste auftauchen).
-function kia2lox_test_login($username, $password, $pin) {
+function kia2lox_test_login($username, $password, $pin, $brand = "kia") {
 	global $lbpbindir, $lbpdatadir;
 
 	$python = $lbpdatadir . "/venv/bin/python3";
@@ -413,7 +419,7 @@ function kia2lox_test_login($username, $password, $pin) {
 		return ["ok" => false, "error" => kia2lox_t("ERRORS.LOGIN_TEST_START_FAILED")];
 	}
 
-	$payload = json_encode(["username" => $username, "password" => $password, "pin" => $pin]);
+	$payload = json_encode(["username" => $username, "password" => $password, "pin" => $pin, "brand" => $brand]);
 	fwrite($pipes[0], $payload);
 	fclose($pipes[0]);
 

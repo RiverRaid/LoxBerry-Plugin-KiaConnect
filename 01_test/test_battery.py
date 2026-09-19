@@ -1,16 +1,17 @@
 """
 Eigenstaendiges Testscript ausserhalb des LoxBerry-Plugins: Ladezustand
-eines einzelnen Kia-e-Autos ueber Kia Connect abfragen und die Werte per
-UDP an den Loxone Miniserver senden. Nuetzlich, um die Kia-Connect-
-Zugangsdaten und die eigene Netzwerkverbindung schnell zu pruefen, ohne
-das Plugin zu installieren. Das echte Plugin (bin/kia2lox_poll.py)
-unterstuetzt zusaetzlich mehrere Fahrzeuge, Abfrage-Intervalle und
-Batterie-Zustandswarnungen.
+eines einzelnen Kia- oder Hyundai-e-Autos ueber Kia/Hyundai Connect
+abfragen und die Werte per UDP an den Loxone Miniserver senden. Nuetzlich,
+um die Connect-Zugangsdaten und die eigene Netzwerkverbindung schnell zu
+pruefen, ohne das Plugin zu installieren. Das echte Plugin
+(bin/kia2lox_poll.py) unterstuetzt zusaetzlich mehrere Fahrzeuge,
+Abfrage-Intervalle und Batterie-Zustandswarnungen.
 
 Vor dem ersten Start:
 1. Datei "config.example.json" kopieren und in "config.json" umbenennen
 2. In "config.json" Benutzername, Passwort, Ziel-IP und Ziel-Port eintragen
-   (pin kann normalerweise leer bleiben "")
+   (pin kann normalerweise leer bleiben "", brand ist optional, "kia" oder
+   "hyundai", Standard ist "kia")
 
 Aufruf:
     python test_battery.py            -> liest nur die zuletzt vom Auto gemeldeten Werte (passiv)
@@ -29,6 +30,8 @@ from hyundai_kia_connect_api.const import REGIONS, BRANDS
 
 REGION_EUROPE = 1
 BRAND_KIA_ID = 1
+BRAND_HYUNDAI_ID = 2
+BRAND_IDS = {"kia": BRAND_KIA_ID, "hyundai": BRAND_HYUNDAI_ID}
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 
@@ -59,13 +62,14 @@ def main() -> None:
     args = parser.parse_args()
 
     config = load_config()
+    brand_id = BRAND_IDS.get(config.get("brand", "kia"), BRAND_KIA_ID)
 
-    print(f"Region: {REGIONS[REGION_EUROPE]}, Marke: {BRANDS[BRAND_KIA_ID]}")
-    print("Verbinde mit Kia Connect ...")
+    print(f"Region: {REGIONS[REGION_EUROPE]}, Marke: {BRANDS[brand_id]}")
+    print("Verbinde mit Kia/Hyundai Connect ...")
 
     manager = VehicleManager(
         region=REGION_EUROPE,
-        brand=BRAND_KIA_ID,
+        brand=brand_id,
         username=config["username"],
         password=config["password"],
         pin=config.get("pin", ""),

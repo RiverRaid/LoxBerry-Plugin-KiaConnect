@@ -22,6 +22,8 @@ from hyundai_kia_connect_api import VehicleManager
 
 REGION_EUROPE = 1
 BRAND_KIA_ID = 1
+BRAND_HYUNDAI_ID = 2
+BRAND_IDS = {"kia": BRAND_KIA_ID, "hyundai": BRAND_HYUNDAI_ID}
 
 # Standardwerte fuer die Batteriepflege-Schwellwerte, falls ein Fahrzeug
 # (z.B. nach einem Upgrade von einer aelteren Version) noch keine eigenen
@@ -469,7 +471,7 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
 
     manager = VehicleManager(
         region=REGION_EUROPE,
-        brand=BRAND_KIA_ID,
+        brand=BRAND_IDS.get(vehicle_config.get("brand", "kia"), BRAND_KIA_ID),
         username=vehicle_config["kia_username"],
         password=vehicle_config["kia_password"],
         pin=vehicle_config.get("kia_pin", ""),

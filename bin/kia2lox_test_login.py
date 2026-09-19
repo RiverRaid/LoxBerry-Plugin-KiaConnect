@@ -5,7 +5,7 @@ zu speichern. Wird von der Einstellungsseite (PHP) aufgerufen.
 
 Liest die Zugangsdaten als JSON von STDIN (nicht als Kommandozeilen-
 Argument, damit sie nicht in der Prozessliste sichtbar sind):
-    {"username": "...", "password": "...", "pin": ""}
+    {"username": "...", "password": "...", "pin": "", "brand": "kia"}
 
 Gibt das Ergebnis als einzeilige JSON-Zeile auf STDOUT aus:
     {"ok": true, "vehicle_count": 1}
@@ -19,6 +19,8 @@ from hyundai_kia_connect_api import VehicleManager
 
 REGION_EUROPE = 1
 BRAND_KIA_ID = 1
+BRAND_HYUNDAI_ID = 2
+BRAND_IDS = {"kia": BRAND_KIA_ID, "hyundai": BRAND_HYUNDAI_ID}
 
 
 def main() -> None:
@@ -31,6 +33,7 @@ def main() -> None:
     username = (payload.get("username") or "").strip()
     password = payload.get("password") or ""
     pin = (payload.get("pin") or "").strip()
+    brand = payload.get("brand") or "kia"
 
     if not username or not password:
         print(json.dumps({"ok": False, "error": "Benutzername oder Passwort fehlt"}))
@@ -38,7 +41,7 @@ def main() -> None:
 
     manager = VehicleManager(
         region=REGION_EUROPE,
-        brand=BRAND_KIA_ID,
+        brand=BRAND_IDS.get(brand, BRAND_KIA_ID),
         username=username,
         password=password,
         pin=pin,

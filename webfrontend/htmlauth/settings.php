@@ -61,6 +61,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 	} elseif ($action === "save_credentials") {
 		$id = $_POST["vehicle_id"] ?? "";
 		$name = trim($_POST["vehicle_name"] ?? "");
+		$brand = ($_POST["brand"] ?? "kia") === "hyundai" ? "hyundai" : "kia";
 		$username = trim($_POST["kia_username"] ?? "");
 		$password = $_POST["kia_password"] ?? "";
 		$pin = trim($_POST["kia_pin"] ?? "");
@@ -84,13 +85,15 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		$credentials_changed = $current === null
 			|| ($current["kia_username"] ?? "") !== $username
 			|| ($current["kia_password"] ?? "") !== $password
-			|| ($current["kia_pin"] ?? "") !== $pin;
+			|| ($current["kia_pin"] ?? "") !== $pin
+			|| ($current["brand"] ?? "kia") !== $brand;
 
-		// Fahrzeugname unabhaengig vom Login-Ergebnis speichern, damit
-		// er auch bei falschen Zugangsdaten nicht verloren geht.
+		// Fahrzeugname und Marke unabhaengig vom Login-Ergebnis speichern,
+		// damit sie auch bei falschen Zugangsdaten nicht verloren gehen.
 		foreach ($vehicles as &$v) {
 			if ($v["id"] === $id) {
 				$v["name"] = $name;
+				$v["brand"] = $brand;
 			}
 		}
 		unset($v);
@@ -105,7 +108,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 			]);
 		}
 
-		$test = kia2lox_test_login($username, $password, $pin);
+		$test = kia2lox_test_login($username, $password, $pin, $brand);
 		if (!$test["ok"]) {
 			kia2lox_json_response([
 				"ok" => false,
@@ -121,6 +124,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		// zu sehen sind, statt bis zum naechsten Intervall zu warten.
 		foreach ($vehicles as &$v) {
 			if ($v["id"] === $id) {
+				$v["brand"] = $brand;
 				$v["kia_username"] = $username;
 				$v["kia_password"] = $password;
 				$v["kia_pin"] = $pin;
@@ -341,6 +345,13 @@ require "inc_header.php";
 			<input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($active_id); ?>">
 
 			<div class="kia2lox-field-grid">
+				<div class="kia2lox-field">
+					<label for="brand"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_BRAND")); ?></label>
+					<select id="brand" name="brand" data-role="none" required>
+						<option value="kia" <?php echo ($active["brand"] ?? "kia") === "kia" ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.BRAND_KIA")); ?></option>
+						<option value="hyundai" <?php echo ($active["brand"] ?? "kia") === "hyundai" ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.BRAND_HYUNDAI")); ?></option>
+					</select>
+				</div>
 				<div class="kia2lox-field">
 					<label for="vehicle_name"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_VEHICLE_NAME")); ?></label>
 					<input type="text" id="vehicle_name" name="vehicle_name" autocomplete="off" data-role="none"
@@ -803,7 +814,7 @@ require "inc_header.php";
 	}
 	kia2loxInitSaveGroup(
 		"cred",
-		["vehicle_name", "kia_username", "kia_password", "kia_pin"],
+		["brand", "vehicle_name", "kia_username", "kia_password", "kia_pin"],
 		"kia2lox-save-cred",
 		function () { return kia2loxCredComplete(); }
 	);
