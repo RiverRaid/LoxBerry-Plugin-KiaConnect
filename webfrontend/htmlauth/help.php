@@ -49,6 +49,17 @@ require "inc_header.php";
 	</div>
 
 	<div class="kia2lox-card">
+		<h2><?php echo kia2lox_t("HELP.SOURCE_TITLE"); ?></h2>
+		<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.SOURCE_INTRO"); ?></p>
+		<ul class="kia2lox-help-list">
+			<li><?php echo kia2lox_t("HELP.SOURCE_KIA_ITEM"); ?></li>
+			<li><?php echo kia2lox_t("HELP.SOURCE_PLEOS_ITEM"); ?></li>
+		</ul>
+		<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.SOURCE_PLEOS_SETUP"); ?></p>
+		<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.SOURCE_SWITCH_TEXT"); ?></p>
+	</div>
+
+	<div class="kia2lox-card">
 		<h2><?php echo kia2lox_t("HELP.PASSIVE_TITLE"); ?></h2>
 		<p class="kia2lox-desc"><?php echo kia2lox_t("HELP.PASSIVE_INTRO"); ?></p>
 		<ul class="kia2lox-help-list">

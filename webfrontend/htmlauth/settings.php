@@ -65,15 +65,26 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 		$username = trim($_POST["kia_username"] ?? "");
 		$password = $_POST["kia_password"] ?? "";
 		$pin = trim($_POST["kia_pin"] ?? "");
+		$source = ($_POST["data_source"] ?? "kia_connect") === "pleos" ? "pleos" : "kia_connect";
+		$pleos_client_id = trim($_POST["pleos_client_id"] ?? "");
+		$pleos_client_secret = trim($_POST["pleos_client_secret"] ?? "");
+		$pleos_vin = strtoupper(trim($_POST["pleos_vin"] ?? ""));
 
-		if ($name === "" || $username === "" || $password === "") {
+		// Pflichtfelder nur fuer die gewaehlte Datenquelle - die Felder der
+		// anderen Quelle sind im Formular deaktiviert und kommen gar nicht mit.
+		if ($name === ""
+			|| ($source === "kia_connect" && ($username === "" || $password === ""))
+			|| ($source === "pleos" && ($pleos_client_id === "" || $pleos_client_secret === ""))) {
 			kia2lox_json_response(["ok" => false, "message" => kia2lox_t("SETTINGS.CRED_REQUIRED")]);
 		}
 
-		// Aktuellen Stand ermitteln - nur wenn sich Benutzername, Passwort
-		// oder PIN wirklich geaendert haben (oder das Fahrzeug noch nie
-		// erfolgreich verbunden war), ist ein erneuter Login-Test noetig.
-		// Eine reine Namensaenderung braucht keinen neuen Check.
+		// Aktuellen Stand ermitteln - nur wenn sich die Zugangsdaten der
+		// gewaehlten Quelle wirklich geaendert haben (oder sie noch nie
+		// erfolgreich getestet wurden), ist ein erneuter Login-Test noetig.
+		// Eine reine Namensaenderung braucht keinen neuen Check, und ein
+		// Zurueckschalten auf eine frueher schon funktionierende Quelle
+		// ebenfalls nicht (die Zugangsdaten beider Quellen bleiben
+		// gespeichert, siehe Migration in kia2lox_load_vehicles()).
 		$current = null;
 		foreach ($vehicles as $v) {
 			if ($v["id"] === $id) {
@@ -82,11 +93,23 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 			}
 		}
 		$was_connected = !empty($current["kia_connected"]);
-		$credentials_changed = $current === null
-			|| ($current["kia_username"] ?? "") !== $username
-			|| ($current["kia_password"] ?? "") !== $password
-			|| ($current["kia_pin"] ?? "") !== $pin
-			|| ($current["brand"] ?? "kia") !== $brand;
+		$source_changed = ($current["data_source"] ?? "kia_connect") !== $source;
+		$brand_changed = ($current["brand"] ?? "kia") !== $brand;
+		if ($source === "pleos") {
+			$source_ok = !empty($current["pleos_ok"]);
+			$credentials_changed = $current === null
+				|| ($current["pleos_client_id"] ?? "") !== $pleos_client_id
+				|| ($current["pleos_client_secret"] ?? "") !== $pleos_client_secret
+				|| ($current["pleos_vin"] ?? "") !== $pleos_vin
+				|| $brand_changed;
+		} else {
+			$source_ok = !empty($current["kia_login_ok"]);
+			$credentials_changed = $current === null
+				|| ($current["kia_username"] ?? "") !== $username
+				|| ($current["kia_password"] ?? "") !== $password
+				|| ($current["kia_pin"] ?? "") !== $pin
+				|| $brand_changed;
+		}
 
 		// Fahrzeugname und Marke unabhaengig vom Login-Ergebnis speichern,
 		// damit sie auch bei falschen Zugangsdaten nicht verloren gehen.
@@ -94,22 +117,45 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 			if ($v["id"] === $id) {
 				$v["name"] = $name;
 				$v["brand"] = $brand;
+				// Eine geaenderte Marke macht auch die gespeicherten
+				// Zugangsdaten der jeweils anderen Quelle ungueltig.
+				if ($brand_changed) {
+					$v[$source === "pleos" ? "kia_login_ok" : "pleos_ok"] = false;
+				}
 			}
 		}
 		unset($v);
 		kia2lox_save_vehicles($vehicles);
 
-		if ($was_connected && !$credentials_changed) {
+		if ($source_ok && !$credentials_changed) {
+			if ($source_changed) {
+				foreach ($vehicles as &$v) {
+					if ($v["id"] === $id) {
+						$v["data_source"] = $source;
+						$v["kia_connected"] = true;
+					}
+				}
+				unset($v);
+				kia2lox_save_vehicles($vehicles);
+				kia2lox_manual_refresh($id, true);
+			}
 			kia2lox_json_response([
 				"ok" => true,
-				"message" => kia2lox_t("SETTINGS.SAVE_OK_DEFAULT"),
+				"message" => kia2lox_t($source_changed ? "SETTINGS.SOURCE_SWITCHED" : "SETTINGS.SAVE_OK_DEFAULT"),
 				"name" => $name,
 				"connected" => true,
+				"reload" => $source_changed,
 			]);
 		}
 
-		$test = kia2lox_test_login($username, $password, $pin, $brand);
+		if ($source === "pleos") {
+			$test = kia2lox_test_pleos($pleos_client_id, $pleos_client_secret, $pleos_vin, $brand);
+		} else {
+			$test = kia2lox_test_login($username, $password, $pin, $brand);
+		}
 		if (!$test["ok"]) {
+			// Bei einem Fehlschlag bleibt die bisherige Datenquelle aktiv -
+			// ein missglueckter Umstieg legt das Fahrzeug also nicht lahm.
 			kia2lox_json_response([
 				"ok" => false,
 				"message" => kia2lox_t("SETTINGS.LOGIN_FAILED", ["error" => $test["error"] ?? kia2lox_t("COMMON.UNKNOWN_ERROR")]),
@@ -118,23 +164,32 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 			]);
 		}
 
-		// War dieses Fahrzeug vorher noch nicht verbunden, ist das hier die
-		// allererste erfolgreiche Verbindung - dann gleich einen echten
-		// Force-Refresh anstossen, damit auf der Uebersicht sofort Daten
-		// zu sehen sind, statt bis zum naechsten Intervall zu warten.
 		foreach ($vehicles as &$v) {
 			if ($v["id"] === $id) {
 				$v["brand"] = $brand;
-				$v["kia_username"] = $username;
-				$v["kia_password"] = $password;
-				$v["kia_pin"] = $pin;
+				if ($source === "pleos") {
+					$v["pleos_client_id"] = $pleos_client_id;
+					$v["pleos_client_secret"] = $pleos_client_secret;
+					$v["pleos_vin"] = $pleos_vin;
+					$v["pleos_ok"] = true;
+				} else {
+					$v["kia_username"] = $username;
+					$v["kia_password"] = $password;
+					$v["kia_pin"] = $pin;
+					$v["kia_login_ok"] = true;
+				}
+				$v["data_source"] = $source;
 				$v["kia_connected"] = true;
 			}
 		}
 		unset($v);
 		kia2lox_save_vehicles($vehicles);
 
-		if (!$was_connected) {
+		// Erste erfolgreiche Verbindung oder Wechsel der Datenquelle: gleich
+		// eine echte Abfrage anstossen, damit auf der Uebersicht sofort
+		// Daten zu sehen sind, statt bis zum naechsten Intervall zu warten
+		// (bei Pleos wird daraus automatisch eine passive Abfrage).
+		if (!$was_connected || $source_changed) {
 			kia2lox_manual_refresh($id, true);
 		}
 
@@ -143,6 +198,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST") {
 			"message" => kia2lox_t("SETTINGS.CRED_SAVED"),
 			"name" => $name,
 			"connected" => true,
+			"reload" => !$was_connected || $source_changed,
 		]);
 	} elseif ($action === "save_miniserver") {
 		$id = $_POST["vehicle_id"] ?? "";
@@ -299,6 +355,9 @@ if ($active === null) {
 // Loxone-Vorlagen gesperrt (siehe Karten weiter unten) - es wuerden ja
 // ohnehin keine Kia-Connect-Anfragen fuer dieses Fahrzeug ausgefuehrt.
 $connected = !empty($active["kia_connected"]);
+// Pleos kann das Fahrzeug nicht aufwecken - Force-Refresh-Einstellungen
+// und -Button werden dann ausgeblendet (siehe bin/kia2lox_pleos.py).
+$active_pleos = ($active["data_source"] ?? "kia_connect") === "pleos";
 
 if (isset($_GET["saved"]) && $message === null) {
 	if ($_GET["saved"] === "ms") {
@@ -358,6 +417,16 @@ require "inc_header.php";
 					       value="<?php echo htmlspecialchars($active["name"]); ?>" required>
 				</div>
 				<div class="kia2lox-field">
+					<label for="data_source"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_DATA_SOURCE")); ?></label>
+					<select id="data_source" name="data_source" data-role="none">
+						<option value="kia_connect" <?php echo !$active_pleos ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SOURCE_KIA_CONNECT")); ?></option>
+						<option value="pleos" <?php echo $active_pleos ? "selected" : ""; ?>><?php echo htmlspecialchars(kia2lox_t("SETTINGS.SOURCE_PLEOS")); ?></option>
+					</select>
+				</div>
+			</div>
+
+			<div class="kia2lox-field-grid" id="kia2lox-kia-fields">
+				<div class="kia2lox-field">
 					<label for="kia_username"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_USERNAME")); ?></label>
 					<input type="email" id="kia_username" name="kia_username" autocomplete="off" data-role="none"
 					       pattern="[^\s@&lt;&gt;]+@[^\s@&lt;&gt;]+\.[A-Za-z]{2,}"
@@ -373,6 +442,28 @@ require "inc_header.php";
 					<input type="password" id="kia_pin" name="kia_pin" autocomplete="new-password" data-role="none"
 					       value="<?php echo htmlspecialchars($active["kia_pin"]); ?>">
 					<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.PIN_HINT")); ?></p>
+				</div>
+			</div>
+
+			<div id="kia2lox-pleos-fields">
+				<p class="kia2lox-hint"><?php echo kia2lox_t("SETTINGS.PLEOS_HINT", ["link" => '<a href="https://pleos.ai/playground" target="_blank" rel="noopener">pleos.ai/playground</a>']); ?></p>
+				<div class="kia2lox-field-grid">
+					<div class="kia2lox-field">
+						<label for="pleos_client_id"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_PLEOS_CLIENT_ID")); ?></label>
+						<input type="text" id="pleos_client_id" name="pleos_client_id" autocomplete="off" data-role="none"
+						       value="<?php echo htmlspecialchars($active["pleos_client_id"] ?? ""); ?>" required>
+					</div>
+					<div class="kia2lox-field">
+						<label for="pleos_client_secret"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_PLEOS_CLIENT_SECRET")); ?></label>
+						<input type="password" id="pleos_client_secret" name="pleos_client_secret" autocomplete="new-password" data-role="none"
+						       value="<?php echo htmlspecialchars($active["pleos_client_secret"] ?? ""); ?>" required>
+					</div>
+					<div class="kia2lox-field">
+						<label for="pleos_vin"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_PLEOS_VIN")); ?></label>
+						<input type="text" id="pleos_vin" name="pleos_vin" autocomplete="off" data-role="none" maxlength="17"
+						       value="<?php echo htmlspecialchars($active["pleos_vin"] ?? ""); ?>">
+						<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.PLEOS_VIN_HINT")); ?></p>
+					</div>
 				</div>
 			</div>
 
@@ -520,7 +611,13 @@ require "inc_header.php";
 					</div>
 				</div>
 
-				<div class="kia2lox-field-block">
+				<?php if ($active_pleos): ?>
+					<div class="kia2lox-field-block">
+						<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.PLEOS_NO_FORCE_HINT")); ?></p>
+					</div>
+				<?php endif; ?>
+				<?php // Bei Pleos nur ausgeblendet statt weggelassen, damit das Intervall-JS unten unveraendert funktioniert und die Force-Zeiten fuer ein spaeteres Zurueckschalten erhalten bleiben. ?>
+				<div class="kia2lox-field-block" <?php echo $active_pleos ? 'style="display:none"' : ""; ?>>
 					<div class="kia2lox-field">
 						<div class="kia2lox-label-row">
 							<label for="force_freq"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.LABEL_FORCE_FREQ")); ?></label>
@@ -636,7 +733,7 @@ require "inc_header.php";
 				</div>
 			</div>
 
-			<div class="kia2lox-field">
+			<div class="kia2lox-field" <?php echo $active_pleos ? 'style="display:none"' : ""; ?>>
 				<label class="kia2lox-checkbox">
 					<input type="checkbox" id="stale_auto_refresh_enabled" name="stale_auto_refresh_enabled" value="1" data-role="none"
 					       <?php echo $stale_auto_refresh_enabled ? "checked" : ""; ?>>
@@ -687,6 +784,9 @@ require "inc_header.php";
 				<code id="kia2lox-refresh-url"><?php echo htmlspecialchars($refresh_url); ?></code>
 				<button type="button" class="kia2lox-copy-btn" data-copy-target="kia2lox-refresh-url"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.COPY_BUTTON")); ?></button>
 			</div>
+			<?php if ($active_pleos): ?>
+				<p class="kia2lox-hint"><?php echo htmlspecialchars(kia2lox_t("SETTINGS.PLEOS_REFRESH_HINT")); ?></p>
+			<?php endif; ?>
 		</div>
 		<?php endif; ?>
 		</div>
@@ -806,15 +906,43 @@ require "inc_header.php";
 	}
 
 	var KIA2LOX_EMAIL_RE = /^[^\s@<>]+@[^\s@<>]+\.[A-Za-z]{2,}$/;
+	function kia2loxIsPleos() {
+		return document.getElementById("data_source").value === "pleos";
+	}
 	function kia2loxCredComplete() {
 		var name = document.getElementById("vehicle_name").value.trim();
+		if (kia2loxIsPleos()) {
+			return name !== ""
+				&& document.getElementById("pleos_client_id").value.trim() !== ""
+				&& document.getElementById("pleos_client_secret").value.trim() !== "";
+		}
 		var email = document.getElementById("kia_username").value.trim();
 		var password = document.getElementById("kia_password").value.trim();
 		return name !== "" && KIA2LOX_EMAIL_RE.test(email) && password !== "";
 	}
+
+	// Datenquelle: nur die Felder der gewaehlten Quelle zeigen. Die der
+	// anderen Quelle werden deaktiviert (nicht nur ausgeblendet), damit ihre
+	// required-Attribute die Browser-Validierung nicht blockieren - ihre
+	// gespeicherten Werte bleiben serverseitig trotzdem erhalten.
+	(function () {
+		var select = document.getElementById("data_source");
+		var groups = { kia_connect: "kia2lox-kia-fields", pleos: "kia2lox-pleos-fields" };
+		function apply() {
+			Object.keys(groups).forEach(function (src) {
+				var wrap = document.getElementById(groups[src]);
+				var active = select.value === src;
+				wrap.style.display = active ? "" : "none";
+				wrap.querySelectorAll("input").forEach(function (el) { el.disabled = !active; });
+			});
+		}
+		select.addEventListener("change", apply);
+		apply();
+	})();
+
 	kia2loxInitSaveGroup(
 		"cred",
-		["brand", "vehicle_name", "kia_username", "kia_password", "kia_pin"],
+		["brand", "vehicle_name", "data_source", "kia_username", "kia_password", "kia_pin", "pleos_client_id", "pleos_client_secret", "pleos_vin"],
 		"kia2lox-save-cred",
 		function () { return kia2loxCredComplete(); }
 	);
@@ -834,7 +962,7 @@ require "inc_header.php";
 	// auch ohne Seiten-Reload dauerhaft gruen bleibt.
 	var kia2loxCredCardState = (function () {
 		var card = document.getElementById("kia2lox-cred-card");
-		var fields = ["vehicle_name", "kia_username", "kia_password"].map(function (id) {
+		var fields = ["vehicle_name", "kia_username", "kia_password", "pleos_client_id", "pleos_client_secret"].map(function (id) {
 			return document.getElementById(id);
 		});
 		var wasConnected = card.dataset.connected === "1";
@@ -844,6 +972,7 @@ require "inc_header.php";
 			card.classList.toggle("kia2lox-card-connected", complete && wasConnected);
 		}
 		fields.forEach(function (el) { el.addEventListener("input", refresh); });
+		document.getElementById("data_source").addEventListener("change", refresh);
 		refresh();
 		return {
 			setConnected: function (v) { wasConnected = v; refresh(); }
@@ -861,8 +990,10 @@ require "inc_header.php";
 			var pill = document.querySelector(".kia2lox-vehicle-pill.active .kia2lox-vehicle-pill-label");
 			if (pill) { pill.textContent = data.name.trim(); }
 		}
-		if (data.connected && !wasConnectedBefore) {
-			window.location.reload();
+		// Neu laden auch nach einem Wechsel der Datenquelle - davon haengt
+		// ab, ob die Force-Refresh-Einstellungen angezeigt werden.
+		if (data.connected && (!wasConnectedBefore || data.reload)) {
+			setTimeout(function () { window.location.reload(); }, 900);
 		}
 	});
 	kia2loxAjaxSave(document.getElementById("kia2lox-ms-form"), "kia2lox-save-feedback-ms", function () {
@@ -1217,7 +1348,7 @@ require "inc_header.php";
 				forceTimesList.querySelectorAll('input[type="time"]'),
 				function (el) { return el.value; }
 			).filter(function (v) { return v !== ""; }));
-			forceScheduleRow.style.display = forceTimes.length === 0 ? "none" : "";
+			forceScheduleRow.style.display = (forceTimes.length === 0 || <?php echo $active_pleos ? "true" : "false"; ?>) ? "none" : "";
 			renderPills(forceSchedulePills, "force", forceTimes);
 		}
 

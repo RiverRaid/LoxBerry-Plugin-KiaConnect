@@ -1,5 +1,6 @@
 # Lokale Zugangsdaten - niemals committen
 01_test/config.json
+01_test/Pleos.txt
 **/config.json
 *.pyc
 __pycache__/

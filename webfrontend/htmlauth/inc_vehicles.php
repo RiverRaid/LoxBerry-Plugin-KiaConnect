@@ -118,6 +118,24 @@ function kia2lox_load_vehicles() {
 		if (!array_key_exists("brand", $v)) {
 			$v["brand"] = "kia";
 		}
+		// Migration: Datenquelle (Kia Connect App-Login oder Pleos-API).
+		// Bestehende Fahrzeuge bleiben bei Kia Connect. kia_connected ist
+		// ab hier "die aktive Datenquelle ist getestet" - kia_login_ok /
+		// pleos_ok merken sich je Quelle getrennt, ob deren gespeicherte
+		// Zugangsdaten schon einmal funktioniert haben, damit man ohne
+		// erneuten Login-Test zurueckschalten kann (wichtig, wenn gerade
+		// eine der beiden Quellen gestoert ist).
+		if (!array_key_exists("data_source", $v)) {
+			$v["data_source"] = "kia_connect";
+		}
+		if (!array_key_exists("kia_login_ok", $v)) {
+			$v["kia_login_ok"] = !empty($v["kia_connected"]) && $v["data_source"] === "kia_connect";
+		}
+		foreach (["pleos_client_id" => "", "pleos_client_secret" => "", "pleos_vin" => "", "pleos_ok" => false] as $key => $default) {
+			if (!array_key_exists($key, $v)) {
+				$v[$key] = $default;
+			}
+		}
 		// Migration: Fahrzeuge aus einer Zeit vor den Intervall-Einstellungen
 		// (und aus der ersten, noch unvollstaendigen Fassung davon) bekommen
 		// die Kia2Lox-Standardwerte.
@@ -240,6 +258,12 @@ function kia2lox_default_vehicle($name, $id) {
 		"kia_password" => "",
 		"kia_pin" => "",
 		"kia_connected" => false,
+		"data_source" => "kia_connect",
+		"kia_login_ok" => false,
+		"pleos_client_id" => "",
+		"pleos_client_secret" => "",
+		"pleos_vin" => "",
+		"pleos_ok" => false,
 		"ms_number" => "",
 		"udp_target_ip" => "",
 		"udp_target_port" => 7000,
@@ -400,6 +424,15 @@ function kia2lox_ping_miniserver($ip, $timeout = 1.5) {
 // venv auf und uebergibt die Zugangsdaten ueber STDIN (nicht als
 // Kommandozeilen-Argument, damit sie nicht in der Prozessliste auftauchen).
 function kia2lox_test_login($username, $password, $pin, $brand = "kia") {
+	return kia2lox_run_login_test(["username" => $username, "password" => $password, "pin" => $pin, "brand" => $brand]);
+}
+
+// Wie kia2lox_test_login(), aber fuer die Pleos-API (Client ID/Secret).
+function kia2lox_test_pleos($client_id, $client_secret, $vin, $brand = "kia") {
+	return kia2lox_run_login_test(["source" => "pleos", "client_id" => $client_id, "client_secret" => $client_secret, "vin" => $vin, "brand" => $brand]);
+}
+
+function kia2lox_run_login_test($payload) {
 	global $lbpbindir, $lbpdatadir;
 
 	$python = $lbpdatadir . "/venv/bin/python3";
@@ -419,8 +452,7 @@ function kia2lox_test_login($username, $password, $pin, $brand = "kia") {
 		return ["ok" => false, "error" => kia2lox_t("ERRORS.LOGIN_TEST_START_FAILED")];
 	}
 
-	$payload = json_encode(["username" => $username, "password" => $password, "pin" => $pin, "brand" => $brand]);
-	fwrite($pipes[0], $payload);
+	fwrite($pipes[0], json_encode($payload));
 	fclose($pipes[0]);
 
 	$stdout = stream_get_contents($pipes[1]);

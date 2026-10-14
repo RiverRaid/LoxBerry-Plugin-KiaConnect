@@ -6,6 +6,8 @@ zu speichern. Wird von der Einstellungsseite (PHP) aufgerufen.
 Liest die Zugangsdaten als JSON von STDIN (nicht als Kommandozeilen-
 Argument, damit sie nicht in der Prozessliste sichtbar sind):
     {"username": "...", "password": "...", "pin": "", "brand": "kia"}
+bzw. fuer die Pleos-API:
+    {"source": "pleos", "client_id": "...", "client_secret": "...", "vin": "", "brand": "kia"}
 
 Gibt das Ergebnis als einzeilige JSON-Zeile auf STDOUT aus:
     {"ok": true, "vehicle_count": 1}
@@ -17,10 +19,31 @@ import sys
 
 from hyundai_kia_connect_api import VehicleManager
 
+import kia2lox_pleos
+
 REGION_EUROPE = 1
 BRAND_KIA_ID = 1
 BRAND_HYUNDAI_ID = 2
 BRAND_IDS = {"kia": BRAND_KIA_ID, "hyundai": BRAND_HYUNDAI_ID}
+
+
+def test_pleos(payload: dict) -> None:
+    """Pleos-Zugangsdaten pruefen: Token holen und die (ggf. per VIN
+    gewaehlten) Fahrzeuge des Pleos-Kontos auflisten."""
+
+    client_id = (payload.get("client_id") or "").strip()
+    client_secret = (payload.get("client_secret") or "").strip()
+    brand = payload.get("brand") or "kia"
+    if not client_id or not client_secret:
+        print(json.dumps({"ok": False, "error": "Client ID oder Client Secret fehlt"}))
+        return
+    try:
+        token = kia2lox_pleos.get_token(client_id, client_secret, brand)
+        vehicles = kia2lox_pleos.select_vehicles(kia2lox_pleos.get_vehicles(token, brand), payload.get("vin") or "")
+    except Exception as exc:  # noqa: BLE001
+        print(json.dumps({"ok": False, "error": str(exc)}))
+        return
+    print(json.dumps({"ok": True, "vehicle_count": len(vehicles), "vehicle_name": vehicles[0].get("sellname") or ""}))
 
 
 def main() -> None:
@@ -28,6 +51,10 @@ def main() -> None:
         payload = json.load(sys.stdin)
     except json.JSONDecodeError:
         print(json.dumps({"ok": False, "error": "Ungueltige Eingabe"}))
+        return
+
+    if payload.get("source") == "pleos":
+        test_pleos(payload)
         return
 
     username = (payload.get("username") or "").strip()

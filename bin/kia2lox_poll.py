@@ -20,6 +20,8 @@ import sys
 
 from hyundai_kia_connect_api import VehicleManager
 
+import kia2lox_pleos
+
 REGION_EUROPE = 1
 BRAND_KIA_ID = 1
 BRAND_HYUNDAI_ID = 2
@@ -466,8 +468,12 @@ def send_udp(ip: str, port: int, message: str) -> None:
     log("DEBUG", f"UDP gesendet an {ip}:{port} -> {message}")
 
 
-def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: datetime.datetime) -> None:
-    label = vehicle_config.get("name", vehicle_config.get("id", "?"))
+def uses_pleos(vehicle_config: dict) -> bool:
+    return vehicle_config.get("data_source") == "pleos"
+
+
+def fetch_kia_connect(vehicle_config: dict, force: bool) -> list:
+    """Fahrzeugwerte ueber den App-Login (hyundai_kia_connect_api)."""
 
     manager = VehicleManager(
         region=REGION_EUROPE,
@@ -481,9 +487,7 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
     if login_result is not True:
         raise RuntimeError(f"Login benötigt zusätzliche Bestätigung (OTP/2FA): {login_result}")
 
-    udp_ip = vehicle_config["udp_target_ip"]
-    udp_port = int(vehicle_config["udp_target_port"])
-
+    results = []
     for kia_vehicle_id in manager.vehicles:
         if force:
             manager.force_refresh_vehicle_state(kia_vehicle_id)
@@ -491,12 +495,45 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
             manager.update_vehicle_with_cached_state(kia_vehicle_id)
 
         vehicle = manager.get_vehicle(kia_vehicle_id)
+        results.append({
+            "name": vehicle.name,
+            "soc": vehicle.ev_battery_percentage,
+            "range_km": round(vehicle.ev_driving_range) if vehicle.ev_driving_range is not None else None,
+            "charging": 1 if vehicle.ev_battery_is_charging else 0,
+            "plugged": vehicle.ev_battery_is_plugged_in,
+            "last_updated_at": vehicle.last_updated_at,
+        })
+    return results
 
-        soc = vehicle.ev_battery_percentage
-        range_km = round(vehicle.ev_driving_range) if vehicle.ev_driving_range is not None else None
-        charging = 1 if vehicle.ev_battery_is_charging else 0
-        plugged = vehicle.ev_battery_is_plugged_in
-        kia_last_updated_at = str(vehicle.last_updated_at) if vehicle.last_updated_at else None
+
+def fetch_pleos(vehicle_config: dict) -> list:
+    """Fahrzeugwerte ueber die offizielle Pleos Vehicle Data API (immer
+    passiv - siehe bin/kia2lox_pleos.py)."""
+
+    brand = vehicle_config.get("brand", "kia")
+    token = kia2lox_pleos.get_token(vehicle_config.get("pleos_client_id", ""), vehicle_config.get("pleos_client_secret", ""), brand)
+    vehicles = kia2lox_pleos.select_vehicles(kia2lox_pleos.get_vehicles(token, brand), vehicle_config.get("pleos_vin", ""))
+    return [kia2lox_pleos.fetch_vehicle_status(token, brand, v) for v in vehicles]
+
+
+def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: datetime.datetime) -> None:
+    label = vehicle_config.get("name", vehicle_config.get("id", "?"))
+
+    if uses_pleos(vehicle_config):
+        results = fetch_pleos(vehicle_config)
+    else:
+        results = fetch_kia_connect(vehicle_config, force)
+
+    udp_ip = vehicle_config["udp_target_ip"]
+    udp_port = int(vehicle_config["udp_target_port"])
+
+    for vehicle in results:
+        soc = vehicle["soc"]
+        range_km = vehicle["range_km"]
+        charging = vehicle["charging"]
+        plugged = vehicle["plugged"]
+        last_updated_at = vehicle["last_updated_at"]
+        kia_last_updated_at = str(last_updated_at) if last_updated_at else None
 
         full, full_parked, recharge_needed, low_battery = update_battery_health_state(vehicle_config, vstate, soc, plugged, charging, kia_last_updated_at, now)
 
@@ -509,23 +546,26 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
             "full_parked": full_parked,
             "recharge_needed": recharge_needed,
             "low_battery": low_battery,
-            "kia_name": vehicle.name,
+            "kia_name": vehicle["name"],
             "kia_last_updated_at": kia_last_updated_at,
             "updated_at": now.isoformat(),
         }
         append_history(vehicle_config["id"], now, soc, charging=charging, plugged=plugged)
 
-        last_updated_str = vehicle.last_updated_at.strftime("%Y-%m-%d %H:%M:%S") if vehicle.last_updated_at else "-"
+        last_updated_str = last_updated_at.strftime("%Y-%m-%d %H:%M:%S") if last_updated_at else "-"
         log(
             "OK",
-            f"[{label}] {vehicle.name}: SOC={soc}% RANGE={range_km}km "
+            f"[{label}] {vehicle['name']}: SOC={soc}% RANGE={range_km}km "
             f"CHARGING={charging} PLUGGED={plugged} "
             f"FULL={full} FULLPARKED={full_parked} RECHARGE100={recharge_needed} "
             f"LOWBATTERY={low_battery} (Stand: {last_updated_str})"
         )
 
         send_udp(udp_ip, udp_port, f"SOC={soc}")
-        send_udp(udp_ip, udp_port, f"RANGE={range_km}")
+        # Ohne Reichweite (z.B. Pleos beim Niro EV) RANGE gar nicht senden,
+        # statt "RANGE=None" - sonst wuerde Loxone den Eingang auf 0 setzen.
+        if range_km is not None:
+            send_udp(udp_ip, udp_port, f"RANGE={range_km}")
         send_udp(udp_ip, udp_port, f"CHARGING={charging}")
         send_udp(udp_ip, udp_port, f"PLUGGED={plugged}")
         send_udp(udp_ip, udp_port, f"FULL={full}")
@@ -585,11 +625,15 @@ def main() -> None:
             if not vehicle_id or not vehicle_config.get("kia_connected"):
                 continue
             vstate_preview = state.get(vehicle_id) or {}
-            if should_force_refresh_now(vehicle_config, now) or should_poll_passive_now(vehicle_config, vstate_preview, now):
+            # Pleos kann das Fahrzeug nicht aufwecken - Force-Zeitplan und
+            # Auto-Refresh bei veralteten Daten gibt es dort nicht.
+            pleos = uses_pleos(vehicle_config)
+            if (not pleos and should_force_refresh_now(vehicle_config, now)) or should_poll_passive_now(vehicle_config, vstate_preview, now):
                 any_due = True
                 break
             if (
-                vehicle_config.get("stale_auto_refresh_enabled", True)
+                not pleos
+                and vehicle_config.get("stale_auto_refresh_enabled", True)
                 and not vstate_preview.get("stale_warning_pending", False)
                 and stale_warning_needs_refresh(vehicle_config, vstate_preview, now)
             ):
@@ -626,11 +670,15 @@ def main() -> None:
 
         vstate = get_vehicle_state(state, vehicle_id)
 
+        pleos = uses_pleos(vehicle_config)
         if explicit_vehicle:
-            do_force = args.force
+            # Bei Pleos wird ein angeforderter Force-Refresh (Button,
+            # refresh.php) zur passiven Abfrage - so funktionieren bestehende
+            # Loxone-Configs nach dem Umschalten der Datenquelle unveraendert.
+            do_force = args.force and not pleos
             do_poll = True
         else:
-            do_force = should_force_refresh_now(vehicle_config, now)
+            do_force = not pleos and should_force_refresh_now(vehicle_config, now)
             do_poll = do_force or should_poll_passive_now(vehicle_config, vstate, now)
 
             # Eine Warnung ist wegen veralteter Kia-Connect-Daten unterdrueckt
@@ -643,6 +691,7 @@ def main() -> None:
             # zugrunde liegende Warnbedingung selbst nicht mehr zutrifft.
             if (
                 not do_force
+                and not pleos
                 and vehicle_config.get("stale_auto_refresh_enabled", True)
                 and not vstate.get("stale_warning_pending", False)
                 and stale_warning_needs_refresh(vehicle_config, vstate, now)
@@ -657,7 +706,7 @@ def main() -> None:
         # Bei Cron-Durchlaeufen mit mehreren Fahrzeugen sagt die
         # "Abfrage startet"-Zeile oben nicht, welche Art Abfrage ein
         # einzelnes Fahrzeug bekommt - daher hier pro Fahrzeug festhalten.
-        log("INFO", f"[{label}]: {'Force-Refresh' if do_force else 'Passiv-Refresh'}")
+        log("INFO", f"[{label}]: {'Force-Refresh' if do_force else 'Passiv-Refresh'}{' (Pleos)' if pleos else ''}")
 
         vstate["last_passive_poll_at"] = now.isoformat()
         if not explicit_vehicle:
