@@ -4,6 +4,12 @@ A LoxBerry plugin that reads the charge status of a Kia (or Hyundai/Genesis)
 electric vehicle via [Kia Connect](https://www.kia.com) and sends it to a
 Loxone Miniserver over UDP.
 
+Two data sources can be selected per vehicle: the Kia/Hyundai Connect app
+login, or the official, read-only
+[Pleos Vehicle Data API](https://document.pleos.ai/en/api-reference/vehicle-data-api/intro)
+(Europe only), which keeps working when the unofficial app interface is
+blocked.
+
 Connecting to Kia Connect itself is done through the excellent
 [hyundai_kia_connect_api](https://github.com/Hyundai-Kia-Connect/hyundai_kia_connect_api)
 library by Fuat Akgun (MIT license) — this plugin would not exist without it.
@@ -12,6 +18,11 @@ library by Fuat Akgun (MIT license) — this plugin would not exist without it.
 
 - Supports up to 4 vehicles, each with its own brand (Kia or Hyundai), Connect
   account, Miniserver target and schedule
+- **Two data sources per vehicle**: Kia/Hyundai Connect (app login, full
+  feature set incl. range and force-refresh) or the official Pleos Vehicle
+  Data API (Client ID/Secret from [pleos.ai/playground](https://pleos.ai/playground);
+  read-only, no force-refresh, range not available for every model).
+  Credentials of both sources are kept, so you can switch back at any time
 - **Passive polling**: reads the last state Kia Connect has cached, on a
   configurable interval (30–240 minutes), an optional time window, or a list
   of individual times — doesn't wake up the car
@@ -47,7 +58,7 @@ In the LoxBerry web interface, go to **Configuration → Plugins → Add plugin*
 and enter this ZIP URL:
 
 ```
-https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.8.1.zip
+https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.9.0.zip
 ```
 
 Alternatively, download that ZIP manually and install it via the "Upload
@@ -57,7 +68,8 @@ system's Python version.
 
 Once installed, open the plugin, add a vehicle under **Settings**, choose its
 brand (Kia or Hyundai), enter the same credentials used in that brand's
-Connect app, and pick a Miniserver.
+Connect app (or select **Pleos** as data source and enter your Pleos Client ID
+and Client Secret), and pick a Miniserver.
 
 ## Development
 

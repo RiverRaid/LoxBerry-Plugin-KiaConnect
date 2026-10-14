@@ -9,6 +9,7 @@ Kia2Lox fragt regelmäßig den Ladezustand eines oder mehrerer E-Fahrzeuge über
 ===== Funktionen =====
 
   * **Bis zu 4 Fahrzeuge** – jedes mit eigener Marke (Kia oder Hyundai), eigenem Connect-Konto, Miniserver-Ziel und Zeitplan.
+  * **Zwei Datenquellen pro Fahrzeug** – Kia/Hyundai Connect (App-Login, alle Funktionen inkl. Reichweite und Force-Refresh) oder die offizielle **Pleos Vehicle Data API** (Client ID/Secret von [[https://pleos.ai/playground|pleos.ai/playground]]; nur lesend, kein Force-Refresh, Reichweite nicht für alle Modelle). Die Zugangsdaten beider Quellen bleiben gespeichert – Zurückschalten ist jederzeit möglich.
   * **Passives Polling** – liest den zuletzt von Kia Connect zwischengespeicherten Zustand in einem einstellbaren Intervall (30–240 Minuten), optional mit Zeitfenster oder festen Uhrzeiten – weckt das Fahrzeug dabei nicht auf.
   * **Force-Refresh** – weckt das Fahrzeug aktiv für einen frischen Wert, 0–4× täglich zu festen Zeiten oder auf Abruf (Button / HTTP-Trigger).
   * **9 Werte pro Fahrzeug** per UDP: `SOC`, `RANGE`, `CHARGING`, `PLUGGED`, `FULL`, `FULLPARKED`, `RECHARGE100`, `LOWBATTERY`, `ERROR` – die vier Batterie-Warnungen (voll geladen, voll geladen *und* am Lader untätig, lange nicht vollgeladen, niedriger Akku und nicht ladend) haben je Fahrzeug einstellbare Schwellwerte in der einklappbaren „Warnungen"-Box (Standard: 99 %, 3 Std., 3 Std., 30 Tage, 10 %, 3 Std.) und werden automatisch unterdrückt, solange die zugrunde liegenden Kia-Connect-Daten selbst älter als der jeweilige Schwellwert sind – optional mit einmaligem automatischem Force-Refresh, um wieder aktuelle Daten zu holen. `ERROR` meldet einen fehlgeschlagenen Abrufversuch und wird beim nächsten Erfolg wieder zurückgesetzt.
@@ -35,24 +36,24 @@ Kia2Lox fragt regelmäßig den Ladezustand eines oder mehrerer E-Fahrzeuge über
 
 LoxBerry → **Konfiguration → Plugins → Plugin hinzufügen** → Plugin per ZIP-URL installieren:
 
-  https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.8.0.zip
+  https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.9.0.zip
 
 Alternativ die ZIP-Datei herunterladen und über „Plugin-Archiv hochladen" installieren. Das Plugin richtet bei der Installation eine eigene, portable Python-3.12-Umgebung ein und ist damit unabhängig von der System-Python-Version des LoxBerrys.
 
 ===== Konfiguration =====
 
-  - **Fahrzeug anlegen** – unter „Einstellungen" ein Fahrzeug hinzufügen, die Marke (Kia oder Hyundai) wählen und die gleichen Zugangsdaten wie in der jeweiligen Connect-App eintragen.
+  - **Fahrzeug anlegen** – unter „Einstellungen" ein Fahrzeug hinzufügen, die Marke (Kia oder Hyundai) wählen und die gleichen Zugangsdaten wie in der jeweiligen Connect-App eintragen – oder als Datenquelle **Pleos** wählen und Client ID und Client Secret eintragen.
   - **Miniserver wählen** – Zielserver sowie Abfrage-Intervall bzw. Zeitplan (passiv/aktiv) je Fahrzeug festlegen.
   - **Loxone-Config einrichten** – die mitgelieferten Importvorlagen für virtuellen Ein- und Ausgang einspielen; Adresse, Port und Schlüssel sind bereits passend vorausgefüllt.
   - **Warnungen anpassen (optional)** – in der einklappbaren „Warnungen"-Box die Schwellwerte für die Batteriepflege-Hinweise (voll, Zellausgleich, niedriger Akku) je Fahrzeug ändern; die Standardwerte sind bereits sinnvoll voreingestellt.
 
 ===== Datenschutz =====
 
-Die Abfrage läuft ausschließlich zwischen LoxBerry, der Kia/Hyundai-Connect-Cloud und dem eigenen Miniserver. Zugangsdaten und Zustandswerte verlassen diesen Weg nicht; es gibt keine eigene Cloud-Anbindung des Plugins und keine Telemetrie.
+Die Abfrage läuft ausschließlich zwischen LoxBerry, der Kia/Hyundai-Connect-Cloud bzw. der Pleos-API und dem eigenen Miniserver. Zugangsdaten und Zustandswerte verlassen diesen Weg nicht; es gibt keine eigene Cloud-Anbindung des Plugins und keine Telemetrie.
 
 ===== Links =====
 
   * **Vollständige Doku & Quellcode:** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect|GitHub: RiverRaid/LoxBerry-Plugin-KiaConnect]]
-  * **Download (ZIP):** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.8.0.zip|kia2lox 0.8.0.zip]]
+  * **Download (ZIP):** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.9.0.zip|kia2lox 0.9.0.zip]]
   * **Basis-Bibliothek:** [[https://github.com/Hyundai-Kia-Connect/hyundai_kia_connect_api|hyundai_kia_connect_api]] von Fuat Akgun (MIT-Lizenz) – ohne sie gäbe es dieses Plugin nicht.
   * **Support/Fragen:** GitHub-Issues
