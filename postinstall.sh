@@ -125,7 +125,10 @@ fi
 
 echo "<INFO> postinstall.sh: Installiere/aktualisiere Python-Abhaengigkeiten"
 "$VENVDIR/bin/pip" install --quiet --upgrade pip
-"$VENVDIR/bin/pip" install --quiet "hyundai_kia_connect_api==4.28.0"
+# Mindestens 4.35.3: behebt Fehler 9035 ("Unusual activity") beim
+# EU-Token-Tausch, mit dem Kia/Hyundai seit 14.10.2026 aeltere Versionen
+# ablehnt.
+"$VENVDIR/bin/pip" install --quiet "hyundai_kia_connect_api==4.36.1"
 if [ $? -ne 0 ]; then
 	echo "<ERROR> postinstall.sh: Installation der Python-Abhaengigkeiten fehlgeschlagen"
 	exit 2

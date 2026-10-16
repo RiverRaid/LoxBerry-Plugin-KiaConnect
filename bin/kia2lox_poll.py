@@ -18,8 +18,6 @@ import os
 import socket
 import sys
 
-from hyundai_kia_connect_api import VehicleManager
-
 import kia2lox_pleos
 
 REGION_EUROPE = 1
@@ -475,6 +473,13 @@ def uses_pleos(vehicle_config: dict) -> bool:
 def fetch_kia_connect(vehicle_config: dict, force: bool) -> list:
     """Fahrzeugwerte ueber den App-Login (hyundai_kia_connect_api)."""
 
+    # Erst hier importieren: waehrend pip die Bibliothek bei einem
+    # Plugin-Update austauscht, fehlt sie fuer einen Moment - ein Cron-Lauf
+    # genau dann wuerde sonst mit einem Traceback abbrechen, statt als
+    # normaler Abruffehler (ERROR=1) im Log zu landen. Pleos-Fahrzeuge
+    # brauchen die Bibliothek gar nicht.
+    from hyundai_kia_connect_api import VehicleManager
+
     manager = VehicleManager(
         region=REGION_EUROPE,
         brand=BRAND_IDS.get(vehicle_config.get("brand", "kia"), BRAND_KIA_ID),
@@ -555,7 +560,7 @@ def poll_vehicle_config(vehicle_config: dict, vstate: dict, force: bool, now: da
         last_updated_str = last_updated_at.strftime("%Y-%m-%d %H:%M:%S") if last_updated_at else "-"
         log(
             "OK",
-            f"[{label}] {vehicle['name']}: SOC={soc}% RANGE={range_km}km "
+            f"[{label}] {vehicle['name']}: SOC={soc}% RANGE={f'{range_km}km' if range_km is not None else '-'} "
             f"CHARGING={charging} PLUGGED={plugged} "
             f"FULL={full} FULLPARKED={full_parked} RECHARGE100={recharge_needed} "
             f"LOWBATTERY={low_battery} (Stand: {last_updated_str})"
