@@ -125,10 +125,12 @@ fi
 
 echo "<INFO> postinstall.sh: Installiere/aktualisiere Python-Abhaengigkeiten"
 "$VENVDIR/bin/pip" install --quiet --upgrade pip
-# Mindestens 4.35.3: behebt Fehler 9035 ("Unusual activity") beim
-# EU-Token-Tausch, mit dem Kia/Hyundai seit 14.10.2026 aeltere Versionen
-# ablehnt.
-"$VENVDIR/bin/pip" install --quiet "hyundai_kia_connect_api==4.36.1"
+# Kia/Hyundai EU aendert den Login regelmaessig - aeltere Versionen
+# scheitern dann. Ab 4.35.3: Fix fuer Fehler 9035 ("Unusual activity",
+# seit 14.10.2026). Ab den Releases vom 24.10.2026: Fix fuer
+# "Authentication failed - returned to login page" (veralteter
+# User-Agent, seit 22.10.2026).
+"$VENVDIR/bin/pip" install --quiet "hyundai_kia_connect_api==4.42.0"
 if [ $? -ne 0 ]; then
 	echo "<ERROR> postinstall.sh: Installation der Python-Abhaengigkeiten fehlgeschlagen"
 	exit 2
