@@ -36,7 +36,7 @@ Kia2Lox fragt regelmäßig den Ladezustand eines oder mehrerer E-Fahrzeuge über
 
 LoxBerry → **Konfiguration → Plugins → Plugin hinzufügen** → Plugin per ZIP-URL installieren:
 
-  https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.9.1.zip
+  https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.9.2.zip
 
 Alternativ die ZIP-Datei herunterladen und über „Plugin-Archiv hochladen" installieren. Das Plugin richtet bei der Installation eine eigene, portable Python-3.12-Umgebung ein und ist damit unabhängig von der System-Python-Version des LoxBerrys.
 
@@ -54,6 +54,6 @@ Die Abfrage läuft ausschließlich zwischen LoxBerry, der Kia/Hyundai-Connect-Cl
 ===== Links =====
 
   * **Vollständige Doku & Quellcode:** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect|GitHub: RiverRaid/LoxBerry-Plugin-KiaConnect]]
-  * **Download (ZIP):** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.9.1.zip|kia2lox 0.9.1.zip]]
+  * **Download (ZIP):** [[https://github.com/RiverRaid/LoxBerry-Plugin-KiaConnect/archive/refs/tags/0.9.2.zip|kia2lox 0.9.2.zip]]
   * **Basis-Bibliothek:** [[https://github.com/Hyundai-Kia-Connect/hyundai_kia_connect_api|hyundai_kia_connect_api]] von Fuat Akgun (MIT-Lizenz) – ohne sie gäbe es dieses Plugin nicht.
   * **Support/Fragen:** GitHub-Issues
